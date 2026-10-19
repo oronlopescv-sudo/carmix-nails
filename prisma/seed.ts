@@ -55,6 +55,8 @@ const SERVICES: Svc[] = [
     description: "Taxa de formato especial aplicada sobre o conjunto de gel. Somar ao preço do tamanho escolhido." },
   { cat: "formatos-e-tratamentos", name: "1 ou 2 dedos em destaque", slug: "dedos-destaque", priceMin: 50_000, duration: 20, gapAfter: 5,
     description: "Trabalho especial em 1 ou 2 dedos (cada). Somar ao conjunto de gel." },
+  { cat: "formatos-e-tratamentos", name: "Encapsulada", slug: "encapsulada", priceMin: 10_000, duration: 25, gapAfter: 5,
+    description: "Encapsulação aplicada ao conjunto de gel (elementos selados dentro do gel). Somar ao preço do tamanho escolhido." },
   { cat: "formatos-e-tratamentos", name: "Banho de gel", slug: "banho-de-gel", priceMin: 200_000, duration: 45, gapAfter: 5,
     description: "Banho de gel sobre as unhas naturais, para fortalecer e dar brilho." },
 
@@ -165,6 +167,44 @@ async function main() {
     } else {
       await db.service.create({ data });
     }
+  }
+
+  // ── Fotografias de stock (Unsplash, licença livre) — TEMPORÁRIAS ───────────
+  // Colocadas só enquanto a galeria/hero estão vazias, para o site não nascer
+  // sem imagens. Assim que o dono carrega fotos reais no painel, estas nunca
+  // mais são escritas (galeria: só se a tabela estiver vazia; campos de imagem:
+  // só se ainda estiverem a null) — nem dados reais da dona são descartados.
+  const GALLERY_STOCK = [
+    { imageUrl: "/images/seed/galeria-polido.jpg", title: "Manicure em tons naturais", alt: "Mãos com unhas polidas em tons naturais", sortOrder: 0 },
+    { imageUrl: "/images/seed/servico-fibras.jpg", title: "Almond com pontas prateadas", alt: "Unhas almond com pontas prateadas", sortOrder: 1 },
+    { imageUrl: "/images/seed/servico-gel.jpg", title: "Manicure em gel", alt: "Manicure em gel com acabamento brilhante", sortOrder: 2 },
+    { imageUrl: "/images/seed/galeria-preta.jpg", title: "Manicure preta", alt: "Mãos com manicure preta", sortOrder: 3 },
+    { imageUrl: "/images/seed/galeria-art.jpg", title: "Nail art", alt: "Nail art detalhada", sortOrder: 4 },
+  ];
+  if ((await db.galleryImage.count()) === 0) {
+    await db.galleryImage.createMany({ data: GALLERY_STOCK });
+    console.log("  galeria: 5 fotografias de stock (Unsplash) — temporárias até fotos reais");
+  }
+
+  const STOCK_SERVICE_IMAGES: Record<string, string> = {
+    "gel-fibras-s": "/images/seed/servico-fibras.jpg",
+    "gel-fibras-m": "/images/seed/servico-fibras.jpg",
+    "gel-fibras-l": "/images/seed/servico-fibras.jpg",
+    "manutencao-gel": "/images/seed/servico-gel.jpg",
+  };
+  for (const [slug, imageUrl] of Object.entries(STOCK_SERVICE_IMAGES)) {
+    const svc = await db.service.findUnique({ where: { slug }, select: { id: true, imageUrl: true } });
+    if (svc && svc.imageUrl === null) {
+      await db.service.update({ where: { id: svc.id }, data: { imageUrl } });
+    }
+  }
+
+  const settingsRow = await db.businessSettings.findUnique({ where: { id: 1 }, select: { heroImageUrl: true } });
+  if (settingsRow && settingsRow.heroImageUrl === null) {
+    await db.businessSettings.update({
+      where: { id: 1 },
+      data: { heroImageUrl: "/images/seed/hero-nails.jpg" },
+    });
   }
 
   // ── Profissional padrão (a dona do estúdio) ────────────────────────────────

@@ -24,7 +24,7 @@ Next.js 15 (App Router) · TypeScript · Tailwind CSS 4 · Prisma 6 · PostgreSQ
 ```bash
 cp .env.example .env          # preencha DATABASE_URL e NEXT_PUBLIC_SITE_URL
 npm install
-npm run setup                 # migração + seed (categorias, 22 serviços, horários)
+npm run setup                 # migração + seed (categorias, 23 serviços, horários)
 npm run dev                   # http://localhost:3000
 ```
 
