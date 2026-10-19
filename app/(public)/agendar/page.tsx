@@ -44,11 +44,13 @@ export default async function AgendarPage() {
     );
   }
 
-  const [services, pros, links] = await Promise.all([
-    getBookableServices(),
-    getActiveProfessionals(),
-    db.professionalService.findMany({ select: { professionalId: true, serviceId: true } }),
-  ]);
+  const [services, pros] = await Promise.all([getBookableServices(), getActiveProfessionals()]);
+  let links: Array<{ professionalId: string; serviceId: string }> = [];
+  try {
+    links = await db.professionalService.findMany({ select: { professionalId: true, serviceId: true } });
+  } catch (e) {
+    console.error("[carmix] ligações profissional–serviço:", e);
+  }
 
   const servicesByPro = new Map<string, string[]>();
   for (const l of links) {

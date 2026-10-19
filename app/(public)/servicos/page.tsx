@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarCheck, Clock } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { formatPriceRange } from "@/lib/pricing";
@@ -14,16 +15,21 @@ export const metadata: Metadata = {
 
 export default async function ServicosPage() {
   const s = await getSettings();
-  const categories = await db.category.findMany({
-    where: { isActive: true },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    include: {
-      services: {
-        where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  let categories: Array<Prisma.CategoryGetPayload<{ include: { services: true } }>> = [];
+  try {
+    categories = await db.category.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: {
+        services: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        },
       },
-    },
-  });
+    });
+  } catch (e) {
+    console.error("[carmix] categorias — base de dados indisponível:", e);
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-20 pt-12 sm:px-6">

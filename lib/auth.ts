@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { cookies, headers } from "next/headers";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { sha256hex } from "@/lib/utils";
 import { rateLimit, clientIp, RATE_LIMITS } from "@/lib/rate-limit";
@@ -61,10 +62,18 @@ export async function getAuthUser(): Promise<AdminUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const session = await db.session.findUnique({
-    where: { tokenHash: sha256hex(token) },
-    include: { user: true },
-  });
+  let session: Prisma.SessionGetPayload<{ include: { user: true } }> | null = null;
+  try {
+    session = await db.session.findUnique({
+      where: { tokenHash: sha256hex(token) },
+      include: { user: true },
+    });
+  } catch (e) {
+    // Base de dados indisponível: tratar como não autenticado (a página de
+    // login continua acessível em vez de dar 500 com cookie antigo).
+    console.error("[carmix] sessão sem base de dados:", e);
+    return null;
+  }
   if (!session) return null;
   if (session.expiresAt < new Date()) {
     await db.session.delete({ where: { id: session.id } }).catch(() => undefined);

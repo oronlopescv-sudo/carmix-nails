@@ -9,6 +9,14 @@ import { getAuthUser } from "@/lib/auth";
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 
+// No artefacto standalone o cwd é .next/standalone — pasta efémera entre
+// deploys. Avisar em vez de perder fotografias em silêncio: defina UPLOAD_DIR.
+if (!process.env.UPLOAD_DIR && process.cwd().endsWith(".next/standalone")) {
+  console.warn(
+    "[carmix] UPLOAD_DIR não definido no standalone — as fotografias gravam-se dentro do build e perdem-se no próximo deploy. Defina UPLOAD_DIR no painel do hospedeiro.",
+  );
+}
+
 /** Sniffing do conteúdo real (o `file.type` do browser não é confiável). */
 function sniffImage(b: Buffer): "jpg" | "png" | "webp" | "avif" | null {
   if (b.length < 12) return null;

@@ -14,10 +14,13 @@ export const metadata: Metadata = {
 export default async function ReservaPage({ params }: Params) {
   const { reference } = await params;
   const ref = decodeURIComponent(reference).trim().toUpperCase();
-  const [exists, s] = await Promise.all([
-    db.appointment.findUnique({ where: { reference: ref }, select: { id: true } }),
-    getSettings(),
-  ]);
+  let exists: { id: string } | null = null;
+  try {
+    exists = await db.appointment.findUnique({ where: { reference: ref }, select: { id: true } });
+  } catch (e) {
+    console.error("[carmix] reserva:", e);
+  }
+  const s = await getSettings();
 
   return (
     <div className="mx-auto max-w-xl px-4 pb-20 pt-14 sm:px-6">

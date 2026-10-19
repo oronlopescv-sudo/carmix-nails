@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CalendarCheck, Clock, ArrowLeft, Info } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { formatPrice } from "@/lib/pricing";
@@ -12,17 +13,27 @@ type Params = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const svc = await db.service.findUnique({ where: { slug }, select: { name: true, description: true } });
-  if (!svc) return { title: "Serviço não encontrado" };
-  return { title: svc.name, description: svc.description?.slice(0, 160) ?? undefined };
+  try {
+    const svc = await db.service.findUnique({ where: { slug }, select: { name: true, description: true } });
+    if (!svc) return { title: "Serviço não encontrado" };
+    return { title: svc.name, description: svc.description?.slice(0, 160) ?? undefined };
+  } catch {
+    // Base de dados indisponível: metadados neutros em vez de falhar o pedido.
+    return { title: "Serviço" };
+  }
 }
 
 export default async function ServicoPage({ params }: Params) {
   const { slug } = await params;
-  const svc = await db.service.findUnique({
-    where: { slug },
-    include: { category: { select: { name: true, slug: true } } },
-  });
+  let svc: Prisma.ServiceGetPayload<{ include: { category: { select: { name: true; slug: true } } } }> | null = null;
+  try {
+    svc = await db.service.findUnique({
+      where: { slug },
+      include: { category: { select: { name: true, slug: true } } },
+    });
+  } catch (e) {
+    console.error("[carmix] serviço:", e);
+  }
   if (!svc || !svc.isActive) notFound();
   const s = await getSettings();
 
