@@ -58,15 +58,16 @@ Depois entre em `/admin/login` e mude o passe em Configurações → Utilizadore
 
 Com `RESEND_API_KEY` configurada, as clientes recebem confirmação/lembrete/cancelamentos e o estúdio recebe aviso de nova marcação. Sem a chave, tudo funciona — apenas não há e-mails (avisado honestamente no painel).
 
-## Produção
+## Produção (Hostinger web app / VPS)
 
 ```bash
-npx prisma migrate deploy
-npx next build
-npx next start -p 3000
+npm run setup                 # migrate + seed (uma vez por base de dados nova)
+npm run create-admin          # uma vez — cria o login do painel
+npm run build                 # gera .next/standalone
+npm start                     # arranca node .next/standalone/server.js (respeita PORT/HOSTNAME)
 ```
 
-Defina obrigatoriamente `DATABASE_URL` e `NEXT_PUBLIC_SITE_URL` (afeta links de e-mail e sitemap). Recomendado: proteger com HTTPS e manter cópias diárias da base.
+O `output: "standalone"` no `next.config.ts` embute o servidor a correr sem `node_modules` completo — igual aos outros projetos da Hostinger. Defina obrigatoriamente `DATABASE_URL` e `NEXT_PUBLIC_SITE_URL` no painel do ambiente; `RESEND_API_KEY` e restantes variáveis de e-mail são opcionais.
 
 ## Verificações automatizadas
 

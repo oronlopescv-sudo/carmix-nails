@@ -32,8 +32,14 @@ export default async function SobrePage() {
             {s.aboutImageUrl ? (
               <Image src={s.aboutImageUrl} alt={`${s.ownerName} — ${s.brandName}`} fill priority sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
             ) : (
-              <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-nude to-malva-soft/40 p-10 text-center">
-                <p className="text-sm text-tinta-soft">Fotografia do espaço no painel administrativo.</p>
+              <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-nude via-casca to-dourado-light/40 p-10">
+                <div className="text-center">
+                  <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-bordo text-creme shadow-md ring-4 ring-dourado/30">
+                    <span className="font-display text-2xl font-semibold">{s.brandName.slice(0, 2).toUpperCase()}</span>
+                  </span>
+                  <p className="mt-6 font-display text-2xl text-bordo">{s.ownerName}</p>
+                  <p className="mt-2 text-sm text-tinta-soft">{s.brandName}</p>
+                </div>
               </div>
             )}
           </div>
