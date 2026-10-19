@@ -146,6 +146,9 @@ export async function getSlotsAction(
   professionalId: string,
   dateISO: string,
 ): Promise<SlotDTO[]> {
+  const h = await headers();
+  const rl = rateLimit(`avail:${clientIp(h)}`, RATE_LIMITS.availability.limit, RATE_LIMITS.availability.windowMs);
+  if (!rl.ok) return [];
   try {
     const service = await loadServicePro(serviceId, professionalId);
     const day = parseDayISO(dateISO);
@@ -166,6 +169,9 @@ export async function getOpenDaysAction(
   const today = wallNow(settings.timezone);
   const fromDay = addDaysParts(today, 0);
   const toDay = addDaysParts(today, settings.maxLeadDays);
+  const h = await headers();
+  const rl = rateLimit(`avail:${clientIp(h)}`, RATE_LIMITS.availability.limit, RATE_LIMITS.availability.windowMs);
+  if (!rl.ok) return { days: [], maxDay: dayISO(toDay) };
   try {
     const service = await loadServicePro(serviceId, professionalId);
     const days = await getDaysWithSlots(professionalId, service, fromDay, toDay, settings);
@@ -193,11 +199,22 @@ export async function verifyReservationAction(input: {
   return { ok: true, matched: true };
 }
 
-// Metadados da própria reserva para o painel do cliente (após e-mail correto)
+// Metadados + detalhes da própria reserva (após e-mail correto). Os detalhes
+// só saem daqui — NUNCA como props/RSC da página — para a referência não
+// expor data/serviço/profissional a quem não provou ser o dono.
 export async function reservationMetadataAction(
   reference: string,
   email: string,
-): Promise<ActionResult<{ serviceId: string; professionalId: string }>> {
+): Promise<
+  ActionResult<{
+    serviceId: string;
+    professionalId: string;
+    serviceName: string;
+    professionalName: string;
+    status: string;
+    startAtISO: string;
+  }>
+> {
   const h = await headers();
   const rl = rateLimit(`meta:${clientIp(h)}`, 30, 5 * 60_000);
   if (!rl.ok) return { ok: false, error: "Demasiadas tentativas." };
@@ -205,5 +222,13 @@ export async function reservationMetadataAction(
   if (!appt || appt.customer.email?.toLowerCase() !== (email || "").trim().toLowerCase()) {
     return { ok: false, error: "Reserva não verificada." };
   }
-  return { ok: true, serviceId: appt.serviceId, professionalId: appt.professionalId };
+  return {
+    ok: true,
+    serviceId: appt.serviceId,
+    professionalId: appt.professionalId,
+    serviceName: appt.service.name,
+    professionalName: appt.professional.name,
+    status: appt.status as string,
+    startAtISO: appt.startAt.toISOString(),
+  };
 }

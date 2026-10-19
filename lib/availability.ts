@@ -86,7 +86,10 @@ export function computeSlotMinutes(args: {
   const minStart = args.ignoreLeadTime
     ? -Infinity
     : now.getTime() + args.minLeadMinutes * 60_000;
-  const maxStart = now.getTime() + args.maxLeadDays * 24 * 60 * 60_000;
+  // a marcação manual do admin ignora também o horizonte máximo
+  const maxStart = args.ignoreLeadTime
+    ? Infinity
+    : now.getTime() + args.maxLeadDays * 24 * 60 * 60_000;
 
   const out = new Set<number>();
   for (const [ws, we] of free) {
@@ -136,6 +139,11 @@ async function loadDayData(
   const todayISO = dayISO(day);
   const dayStart = wallToUtc(day, 0, 0, tz);
   const dayEnd = wallToUtc(addDaysParts(day, 1), 0, 0, tz);
+  // Bloqueios: startDate/endDate são @db.Date (meia-noite UTC). Comparar à
+  // escala de dias — em fuso UTC−1, wallToUtc(day,0,0) = 01:00 UTC e o
+  // `endDate >= dayStart` deixava escapar o encerramento do próprio dia.
+  const dayMid = new Date(`${dayISO(day)}T00:00:00.000Z`);
+  const nextMid = new Date(`${dayISO(addDaysParts(day, 1))}T00:00:00.000Z`);
 
   const [availabilityRows, blockedRows, apptRows] = await Promise.all([
     dbi.availability.findMany({
@@ -145,8 +153,8 @@ async function loadDayData(
     dbi.blockedPeriod.findMany({
       where: {
         OR: [{ professionalId }, { professionalId: null }],
-        startDate: { lte: dayEnd },
-        endDate: { gte: dayStart },
+        startDate: { lt: nextMid },
+        endDate: { gte: dayMid },
       },
     }),
     dbi.appointment.findMany({
@@ -259,6 +267,9 @@ export async function getDaysWithSlots(
 
   const rangeStart = wallToUtc(fromDay, 0, 0, tz);
   const rangeEnd = wallToUtc(addDaysParts(untilDay, 1), 0, 0, tz);
+  // Bloqueios à escala de dias (idem loadDayData)
+  const rangeMidStart = new Date(`${dayISO(fromDay)}T00:00:00.000Z`);
+  const rangeMidEnd = new Date(`${dayISO(addDaysParts(untilDay, 1))}T00:00:00.000Z`);
 
   const [availabilityRows, blockedRows, apptRows] = await Promise.all([
     db.availability.findMany({
@@ -267,8 +278,8 @@ export async function getDaysWithSlots(
     db.blockedPeriod.findMany({
       where: {
         OR: [{ professionalId }, { professionalId: null }],
-        startDate: { lte: rangeEnd },
-        endDate: { gte: rangeStart },
+        startDate: { lt: rangeMidEnd },
+        endDate: { gte: rangeMidStart },
       },
     }),
     db.appointment.findMany({

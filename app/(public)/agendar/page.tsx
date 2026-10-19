@@ -98,6 +98,7 @@ export default async function AgendarPage() {
           }))}
           currency={s.currency}
           emailConfigured={mailConfigured()}
+          timezone={s.timezone}
         />
       </div>
     </div>

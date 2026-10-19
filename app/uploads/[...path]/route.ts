@@ -21,8 +21,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ path: string[]
   if (!TYPES[ext]) return new NextResponse("Não encontrado", { status: 404 });
 
   const { open } = await import("node:fs/promises");
+  const dir = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(process.cwd(), "data", "uploads");
   try {
-    const file = await open(path.join(process.cwd(), "data", "uploads", name), "r");
+    const file = await open(path.join(dir, name), "r");
     try {
       const stat = await file.stat();
       const body = Buffer.from(await file.readFile());

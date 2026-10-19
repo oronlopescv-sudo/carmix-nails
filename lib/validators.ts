@@ -196,6 +196,15 @@ export const galleryRowSchema = z.object({
   isVisible: z.boolean().optional().default(true),
 });
 
+export const galleryCreateSchema = galleryRowSchema.omit({ id: true }).extend({
+  imageUrl: z
+    .string()
+    .trim()
+    .min(1, "Carregue uma fotografia primeiro.")
+    .max(300)
+    .startsWith("/", "URL da imagem tem de ser interno"),
+});
+
 export const settingsSchema = z.object({
   brandName: z.string().trim().min(2).max(80),
   ownerName: z.string().trim().min(2).max(80),
@@ -263,7 +272,8 @@ export const adminManualBookingSchema = z.object({
 export const userCreateSchema = z.object({
   name: z.string().trim().min(2, "Nome demasiado curto").max(80),
   email: emailField,
-  password: z.string().min(10, "Pelo menos 10 caracteres").max(100),
+  // 5+: o dono escolheu "12345"; recomendamos 10+ no dia a dia
+  password: z.string().min(5, "Pelo menos 5 caracteres").max(100),
 });
 
 export const categorySchema = z.object({

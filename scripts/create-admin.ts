@@ -34,15 +34,15 @@ async function main() {
   }
 
   const name = await ask(rl, "Nome: ");
-  const email = (await ask(rl, "E-mail: ")).toLowerCase();
-  if (!EMAIL_RE.test(email)) {
-    console.error("  → e-mail inválido. Cancelado.");
+  const email = (await ask(rl, "Utilizador (e-mail ou nome à parte, ex.: 12345): ")).toLowerCase();
+  if (email.length < 3 || /\s/.test(email)) {
+    console.error("  → utilizador inválido (mínimo 3 caracteres, sem espaços). Cancelado.");
     rl.close();
     process.exit(1);
   }
-  const password = await ask(rl, "Palavra-passe (mínimo 10 caracteres — aparece no ecrã): ");
-  if (password.length < 10) {
-    console.error("  → pelo menos 10 caracteres. Cancelado.");
+  const password = await ask(rl, "Palavra-passe (mínimo 5 caracteres — aparece no ecrã): ");
+  if (password.length < 5) {
+    console.error("  → pelo menos 5 caracteres. Cancelado.");
     rl.close();
     process.exit(1);
   }

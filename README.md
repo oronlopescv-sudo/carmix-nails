@@ -40,10 +40,11 @@ docker run -d --name carmix-pg -p 5433:5432 \
 ## Primeiro acesso ao painel
 
 ```bash
-npm run create-admin          # pede nome, e-mail e passe (min. 10 caracteres)
+npm run create-admin          # pede nome, utilizador (ou e-mail) e passe (mín. 5; recomendamos 10+)
 ```
 
-Depois entre em `/admin/login` e mude o passe em Configurações → Utilizadores.
+Depois entre em `/admin/login` e mude o passe em Configurações → Utilizadores
+(a própria conta exige a passe atual).
 
 ## Como o estúdio usa
 
@@ -67,7 +68,7 @@ npm run build                 # gera .next/standalone
 npm start                     # arranca node .next/standalone/server.js (respeita PORT/HOSTNAME)
 ```
 
-O `output: "standalone"` no `next.config.ts` embute o servidor a correr sem `node_modules` completo — igual aos outros projetos da Hostinger. Defina obrigatoriamente `DATABASE_URL` e `NEXT_PUBLIC_SITE_URL` no painel do ambiente; `RESEND_API_KEY` e restantes variáveis de e-mail são opcionais.
+O `output: "standalone"` no `next.config.ts` embute o servidor a correr sem `node_modules` completo — igual aos outros projetos da Hostinger. Defina obrigatoriamente `DATABASE_URL` e `NEXT_PUBLIC_SITE_URL` no painel do ambiente; `RESEND_API_KEY` e restantes variáveis de e-mail são opcionais. `UPLOAD_DIR` (opcional) fixa a pasta das fotografias carregadas — se não existir, usa-se `data/uploads` (copiada para o bundle pelo `copy-static`).
 
 ## Verificações automatizadas
 

@@ -43,7 +43,16 @@ export const RATE_LIMITS = {
 } as const;
 
 export function clientIp(headers: Headers): string {
+  // x-forwarded-for: client-controlled, comma-separated. O ÚLTIMO valor é o
+  // que a infraestrutura de confiança acrescentou — o primeiro é forjável
+  // pelo cliente e podia rodar o IP para contornar o limite.
   const fwd = headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
+  if (fwd) {
+    const parts = fwd
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1]!;
+  }
   return headers.get("x-real-ip") ?? "127.0.0.1";
 }

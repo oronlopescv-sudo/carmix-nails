@@ -1,7 +1,9 @@
 "use client";
 
 // Painel da reserva do cliente: verificar e-mail → detalhes → cancelar/remarcar.
-// Todas as operações revalidam no servidor (e-mail obrigatório em cada ação).
+// Os detalhes NUNCA chegam como props da página (o payload RSC seria legível
+// por quem só tem a referência): chegam do servidor, após verificação do
+// e-mail, via reservationMetadataAction. Todas as operações revalidam no servidor.
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -9,8 +11,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2 } from "lucide-react";
 import { cx } from "@/lib/utils";
-import { STATUS_LABELS, STATUS_COLORS, MONTH_LABELS, WEEKDAY_SHORT } from "@/lib/constants";
-import { utcToWall, dayISO } from "@/lib/tz";
+import { STATUS_LABELS, STATUS_COLORS, MONTH_LABELS } from "@/lib/constants";
+import { utcToWall, dayISO, todayISOInTz, dateISOFromIso } from "@/lib/tz";
 import {
   verifyReservationAction,
   cancelBookingAction,
@@ -21,64 +23,74 @@ import {
 } from "@/lib/actions/booking";
 import type { SlotDTO } from "@/types/actions";
 
+type ReservationDetails = {
+  serviceId: string;
+  professionalId: string;
+  serviceName: string;
+  professionalName: string;
+  status: string;
+  startAtISO: string;
+};
+
 export function ReservationPanel({
   reference,
-  serviceName,
-  professionalName,
-  status,
-  startAtISO,
   timezone,
   allowReschedule,
   minCancelHours,
 }: {
   reference: string;
-  serviceName: string;
-  professionalName: string;
-  status: string;
-  startAtISO: string;
   timezone: string;
   allowReschedule: boolean;
   minCancelHours: number;
 }) {
-  const [verified, setVerified] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string | null>(null);
+  const [details, setDetails] = useState<ReservationDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
-
-  const startAt = new Date(startAtISO);
-  const wall = utcToWall(startAt, timezone);
-  const wallISO = `${wall.year}-${String(wall.month).padStart(2, "0")}-${String(wall.day).padStart(2, "0")}`;
-  const weekdayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-  const weekdayName = weekdayNames[new Date(`${wallISO}T12:00:00Z`).getUTCDay()];
 
   async function verify(v: { email: string }) {
     setError(null);
     setChecking(true);
     const res = await verifyReservationAction({ reference, email: v.email });
-    setChecking(false);
     if (!res.ok) {
+      setChecking(false);
       setError(res.error);
       return;
     }
+    const meta = await reservationMetadataAction(reference, v.email);
+    setChecking(false);
+    if (!meta.ok) {
+      setError(meta.error);
+      return;
+    }
     setEmail(v.email);
-    setVerified(true);
+    setDetails(meta);
   }
 
-  if (!verified) {
+  if (!details) {
     return (
       <div className="mt-8">
-        <VerifyForm reference={reference} onVerify={verify} error={error} checking={checking} hint={`reserva: ${serviceName}`} />
+        <VerifyForm reference={reference} onVerify={verify} error={error} checking={checking} />
       </div>
     );
   }
 
+  const startAt = new Date(details.startAtISO);
+  const wall = utcToWall(startAt, timezone);
+  const wallISO = dayISO({ year: wall.year, month: wall.month, day: wall.day });
+  const weekdayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const weekdayName = weekdayNames[new Date(`${wallISO}T12:00:00Z`).getUTCDay()];
+
   return (
     <Panel
       reference={reference}
-      email={email}
-      serviceName={serviceName}
-      professionalName={professionalName}
-      status={status}
+      email={email!}
+      serviceId={details.serviceId}
+      professionalId={details.professionalId}
+      serviceName={details.serviceName}
+      professionalName={details.professionalName}
+      status={details.status}
+      timezone={timezone}
       weekdayName={weekdayName}
       dateLabel={`${wall.day} de ${MONTH_LABELS[wall.month - 1].toLowerCase()} de ${wall.year}`}
       timeLabel={`${String(wall.hour).padStart(2, "0")}:${String(wall.minute).padStart(2, "0")}`}
@@ -94,13 +106,11 @@ function VerifyForm({
   onVerify,
   error,
   checking,
-  hint,
 }: {
   reference: string;
   onVerify: (v: { email: string }) => void;
   error: string | null;
   checking: boolean;
-  hint: string;
 }) {
   const form = useForm<{ email: string }>({ defaultValues: { email: "" } });
   return (
@@ -136,7 +146,9 @@ function VerifyForm({
       >
         {checking && <Loader2 className="h-4 w-4 animate-spin" />} Ver a minha reserva
       </button>
-      <p className="mt-3 text-[12.5px] text-tinta-soft">{hint} — os detalhes só aparecem o dono da reserva.</p>
+      <p className="mt-3 text-[12.5px] text-tinta-soft">
+        Reserva <span className="font-mono">{reference}</span> — os detalhes só aparecem ao dono da reserva.
+      </p>
     </form>
   );
 }
@@ -147,16 +159,19 @@ type Mode = "cancel" | "resch" | null;
 function Panel({ ...props }: {
   reference: string;
   email: string;
+  serviceId: string;
+  professionalId: string;
   serviceName: string;
   professionalName: string;
   status: string;
+  timezone: string;
   weekdayName: string;
   dateLabel: string;
   timeLabel: string;
   allowReschedule: boolean;
   minCancelHours: number;
 }) {
-  const { reference, email, allowReschedule, minCancelHours, ...details } = props;
+  const { reference, email, serviceId, professionalId, timezone, allowReschedule, minCancelHours, ...details } = props;
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(null);
   const [busy, setBusy] = useState(false);
@@ -168,37 +183,31 @@ function Panel({ ...props }: {
   const [openDays, setOpenDays] = useState<Set<string>>(new Set());
   const [slots, setSlots] = useState<SlotDTO[]>([]);
   const [pickedDay, setPickedDay] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ serviceId: string; professionalId: string } | null>(null);
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = todayISOInTz(timezone); // data de parede do estúdio, não UTC
 
   const form = useForm<{ reason: string }>({ defaultValues: { reason: "" } });
 
   useEffect(() => {
+    if (!allowReschedule) return;
     let alive = true;
-    (async () => {
-      const res = await reservationMetadataAction(reference, email);
-      if (!alive || !res.ok) return;
-      setMeta({ serviceId: res.serviceId, professionalId: res.professionalId });
-      if (allowReschedule) {
-        const r = await getOpenDaysAction(res.serviceId, res.professionalId);
-        if (alive) setOpenDays(new Set(r.days));
-      }
-    })();
+    getOpenDaysAction(serviceId, professionalId).then((r) => {
+      if (alive) setOpenDays(new Set(r.days));
+    });
     return () => {
       alive = false;
     };
-  }, [reference, email, allowReschedule]);
+  }, [serviceId, professionalId, allowReschedule]);
 
   useEffect(() => {
-    if (!meta || !pickedDay) return;
+    if (!pickedDay) return;
     let alive = true;
-    getSlotsAction(meta.serviceId, meta.professionalId, pickedDay).then((r) => {
+    getSlotsAction(serviceId, professionalId, pickedDay).then((r) => {
       if (alive) setSlots(r);
     });
     return () => {
       alive = false;
     };
-  }, [pickedDay, meta]);
+  }, [pickedDay, serviceId, professionalId]);
 
   async function doCancel(v: { reason: string }) {
     setBusy(true);
@@ -215,10 +224,15 @@ function Panel({ ...props }: {
   }
 
   async function doReschedule() {
-    if (!newSlot || !meta) return;
+    if (!newSlot) return;
     setBusy(true);
     setError(null);
-    const res = await rescheduleBookingAction({ reference, email, dateISO: newSlot.iso.slice(0, 10), minutes: newSlot.minutes });
+    const res = await rescheduleBookingAction({
+      reference,
+      email,
+      dateISO: dateISOFromIso(newSlot.iso, timezone),
+      minutes: newSlot.minutes,
+    });
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

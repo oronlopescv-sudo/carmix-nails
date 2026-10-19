@@ -79,6 +79,10 @@ export async function getAuthUser(): Promise<AdminUser | null> {
   };
 }
 
+// Hash fixo para uniformizar o tempo de resposta do login (evita enumerar
+// e-mails pela diferença bcrypt / resposta imediata).
+let dummyHash: string | null = null;
+
 // Verificação de login (com limite de tentativas). Devolve o utilizador ou motivo.
 export async function attemptLogin(
   email: string,
@@ -94,7 +98,13 @@ export async function attemptLogin(
     return { ok: false, reason: "rate-limited", retryAfter: rl.retryAfterSeconds };
   }
   const user = await db.user.findUnique({ where: { email: email.trim().toLowerCase() } });
-  if (!user) return { ok: false, reason: "invalid" };
+  if (!user) {
+    // correm bcrypt na mesma para não revelar por timing quais e-mails existem
+    const bcrypt2 = await import("bcryptjs");
+    dummyHash ??= bcrypt2.hashSync("carmix-dummy", 12);
+    await bcrypt2.compare(password, dummyHash);
+    return { ok: false, reason: "invalid" };
+  }
   const bcrypt = await import("bcryptjs");
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) return { ok: false, reason: "invalid" };

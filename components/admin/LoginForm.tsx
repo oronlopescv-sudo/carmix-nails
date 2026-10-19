@@ -33,16 +33,14 @@ export default function LoginForm() {
         router.refresh();
       })}
     >
-      <label className="label" htmlFor="ad-email">E-mail</label>
+      <label className="label" htmlFor="ad-email">Utilizador</label>
       <input
         id="ad-email"
-        type="email"
-        inputMode="email"
+        type="text"
         autoComplete="username"
         className={cx("field", form.formState.errors.email && "field-error")}
         {...form.register("email", {
-          required: "Indique o e-mail",
-          pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "E-mail inválido" },
+          required: "Indique o utilizador",
         })}
       />
       {form.formState.errors.email && <p className="mt-1 text-[12.5px] text-rose-600">{form.formState.errors.email.message}</p>}

@@ -6,6 +6,11 @@ import { playfair, jost } from "@/components/layout/fonts";
 
 const FALLBACK_BRAND = "Carmix Nails";
 
+// Tudo server-rendered on demand: o `next build` nunca toca na base de dados
+// (o painel muda textos/preços a qualquer momento e o deploy da Hostinger
+// corre antes de `npm run setup` existir na BD nova).
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   let brand = FALLBACK_BRAND;
   let seoTitle: string | null = null;

@@ -13,7 +13,7 @@ import { MONTH_LABELS, WEEKDAY_SHORT } from "@/lib/constants";
 import { formatPriceRange } from "@/lib/pricing";
 import { createBookingAction, getSlotsAction, getOpenDaysAction } from "@/lib/actions/booking";
 import type { SlotDTO } from "@/types/actions";
-import { minutesToHM } from "@/lib/tz";
+import { minutesToHM, todayISOInTz } from "@/lib/tz";
 
 export type ServiceOption = {
   id: string;
@@ -112,11 +112,13 @@ export default function BookingFlow({
   professionals,
   currency,
   emailConfigured,
+  timezone,
 }: {
   groups: Array<{ name: string; services: ServiceOption[] }>;
   professionals: (ProOption & { serviceIds: string[] })[];
   currency: string;
   emailConfigured: boolean;
+  timezone: string;
 }) {
   // passo 0=serviço, 1=profissional, 2=data/hora, 3=dados, 4=feito
   const [step, setStep] = useState(0);
@@ -136,7 +138,7 @@ export default function BookingFlow({
   const [done, setDone] = useState<{ reference: string; status: string; emailSent: boolean } | null>(null);
   const openDaysLoadedFor = useRef<string | null>(null);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = useMemo(() => todayISOInTz(timezone), [timezone]); // data de parede, não UTC
 
   const service = useMemo(
     () => groups.flatMap((g) => g.services).find((s) => s.id === serviceId) ?? null,

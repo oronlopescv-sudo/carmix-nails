@@ -154,3 +154,33 @@ export function hmToMinutes(hm: string): number | null {
   if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
   return h * 60 + mm;
 }
+
+// "Hoje" na data de parede do fuso (seguro a correr no cliente; Intl, sem
+// dependências). `new Date().toISOString()` dava a data UTC e errava entre
+// 23:00–24:00 do fuso do estúdio.
+export function todayISOInTz(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+// Data de parede de um instante ISO, no fuso dado (idem acima).
+export function dateISOFromIso(iso: string, tz: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return iso.slice(0, 10);
+  }
+}

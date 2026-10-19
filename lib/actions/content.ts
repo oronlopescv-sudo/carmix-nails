@@ -7,6 +7,7 @@ import {
   parseForm,
   reviewSchema,
   galleryRowSchema,
+  galleryCreateSchema,
   settingsSchema,
   userCreateSchema,
 } from "@/lib/validators";
@@ -16,24 +17,18 @@ import type { ActionResult } from "@/types/actions";
 
 // ── Galeria ──────────────────────────────────────────────────────────────────
 
-export async function createGalleryImageAction(input: {
-  imageUrl: string;
-  title?: string;
-  alt?: string;
-  isVisible?: boolean;
-}): Promise<ActionResult<{ id: string }>> {
+export async function createGalleryImageAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const user = await getAuthUser();
   if (!user) return { ok: false, error: "Sessão expirada. Entre novamente." };
-  if (!input.imageUrl || !input.imageUrl.startsWith("/")) {
-    return { ok: false, error: "Carregue uma fotografia primeiro." };
-  }
+  const parsed = parseForm(galleryCreateSchema, input);
+  if (!parsed.ok) return { ok: false, error: "Verifique os dados.", fieldErrors: parsed.fieldErrors };
   const max = await db.galleryImage.aggregate({ _max: { sortOrder: true } });
   const created = await db.galleryImage.create({
     data: {
-      imageUrl: input.imageUrl,
-      title: input.title?.trim() || null,
-      alt: input.alt?.trim() || null,
-      isVisible: input.isVisible ?? true,
+      imageUrl: parsed.data.imageUrl,
+      title: parsed.data.title,
+      alt: parsed.data.alt,
+      isVisible: parsed.data.isVisible,
       sortOrder: (max._max.sortOrder ?? -1) + 1,
     },
   });
@@ -197,10 +192,22 @@ export async function toggleUserActiveAction(id: string, isActive: boolean): Pro
   return { ok: true };
 }
 
-export async function changeUserPasswordAction(id: string, newPassword: string): Promise<ActionResult> {
+export async function changeUserPasswordAction(
+  id: string,
+  newPassword: string,
+  currentPassword?: string,
+): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { ok: false, error: "Sessão expirada. Entre novamente." };
-  if (newPassword.length < 10) return { ok: false, error: "Pelo menos 10 caracteres." };
+  if (newPassword.length < 5) return { ok: false, error: "Pelo menos 5 caracteres." };
+  if (id === user.id) {
+    // na própria conta, a passe atual é sempre exigida (evita tomar conta alheia)
+    if (!currentPassword) return { ok: false, error: "Indique a palavra-passe atual." };
+    const target = await db.user.findUnique({ where: { id }, select: { passwordHash: true } });
+    if (!target) return { ok: false, error: "Utilizador não encontrado." };
+    const ok = await bcrypt.compare(currentPassword, target.passwordHash);
+    if (!ok) return { ok: false, error: "Palavra-passe atual incorreta." };
+  }
   const passwordHash = await bcrypt.hash(newPassword, 12);
   await db.user.update({ where: { id }, data: { passwordHash } });
   await db.session.deleteMany({ where: { userId: id } });

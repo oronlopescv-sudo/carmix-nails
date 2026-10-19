@@ -367,6 +367,21 @@ export async function rescheduleBookingAsCustomer(input: {
   try {
     await db.$transaction(async (tx) => {
       await lockForProfessional(tx, appt.professionalId);
+      // releitura dentro da transação: o estado pode ter mudado desde o check
+      const current = await tx.appointment.findUnique({
+        where: { id: appt.id },
+        select: { status: true, startAt: true },
+      });
+      if (!current || (current.status !== "PENDING" && current.status !== "CONFIRMED")) {
+        throw new BookingError("INVALID_STATUS", "Esta marcação já não pode ser remarcada online.");
+      }
+      const hoursUntilTx = (current.startAt.getTime() - Date.now()) / 3_600_000;
+      if (hoursUntilTx < settings.minCancelHours) {
+        throw new BookingError(
+          "POLICY_TOO_LATE",
+          `Por política do estúdio, só é possível remarcar online até ${settings.minCancelHours} h antes. Contacte-nos, por favor.`,
+        );
+      }
       const slots = await getDaySlots(tx, appt.professionalId, service, day, settings as SettingsLike, {
         extraConflicts: [
           {

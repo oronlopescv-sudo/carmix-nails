@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/mail";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic"; // sem acesso à BD durante o build
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const staticPages: MetadataRoute.Sitemap = [

@@ -139,17 +139,22 @@ export default function UsersManager({ users, currentUserId }: { users: Array<Us
           userId={newPwFor}
           busy={busy}
           error={newPwError}
+          needsCurrent={newPwFor === currentUserId}
           onCancel={() => {
             setNewPwFor(null);
             setNewPwError(null);
           }}
-          onSubmit={(pw) =>
+          onSubmit={(pw, currPw) =>
             run(async () => {
-              if (pw.length < 10) {
-                setNewPwError("Pelo menos 10 caracteres.");
+              if (pw.length < 5) {
+                setNewPwError("Pelo menos 5 caracteres.");
                 return { ok: false };
               }
-              const res = await changeUserPasswordAction(newPwFor, pw);
+              const res = await changeUserPasswordAction(
+                newPwFor,
+                pw,
+                newPwFor === currentUserId ? currPw : undefined,
+              );
               if (res.ok) {
                 setNewPwFor(null);
                 setNewPwError(null);
@@ -167,25 +172,41 @@ function ChangePassword({
   userId,
   busy,
   error,
+  needsCurrent,
   onSubmit,
   onCancel,
 }: {
   userId: string;
   busy: boolean;
   error: string | null;
-  onSubmit: (pw: string) => Promise<boolean>;
+  needsCurrent: boolean;
+  onSubmit: (pw: string, currentPw?: string) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [pw, setPw] = useState("");
+  const [currPw, setCurrPw] = useState("");
   return (
     <div className="mt-3 rounded-xl bg-casca p-4">
-      <label className="label" htmlFor={`pw-${userId}`}>Novo passe (mínimo 10 caracteres — a conta é desligada para voltar a entrar)</label>
-      <div className="flex max-w-md gap-2">
-        <input id={`pw-${userId}`} type="password" className="field" value={pw} onChange={(e) => setPw(e.target.value)} />
+      <label className="label" htmlFor={`pw-${userId}`}>Novo passe (mínimo 5 caracteres — a conta é desligada para voltar a entrar)</label>
+      <div className="max-w-md space-y-1.5">
+        {needsCurrent && (
+          <input
+            type="password"
+            className="field"
+            placeholder="palavra-passe atual"
+            value={currPw}
+            autoComplete="current-password"
+            onChange={(e) => setCurrPw(e.target.value)}
+            required
+          />
+        )}
+        <input id={`pw-${userId}`} type="password" className="field" value={pw} autoComplete="new-password" onChange={(e) => setPw(e.target.value)} />
+      </div>
+      <div className="mt-2 flex gap-2">
         <button
           type="button"
           disabled={busy}
-          onClick={() => void onSubmit(pw)}
+          onClick={() => void onSubmit(pw, needsCurrent ? currPw : undefined)}
           className="shrink-0 rounded-full bg-bordo px-4 py-2.5 text-[13px] font-medium text-creme transition hover:bg-bordo-dark disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Trocar"}
