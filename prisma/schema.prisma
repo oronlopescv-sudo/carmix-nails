@@ -1,0 +1,325 @@
+// Carmix Nails — esquema da base de dados (PostgreSQL)
+// Preços guardados em centavos da moeda configurada (Int) — nunca decimais.
+// Datas/horas em UTC; horários locais de trabalho em minutos a partir da meia-noite
+// do fuso da marca (BusinessSettings.timezone).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Acesso administrativo ────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(ADMIN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  auditLogs    AuditLog[]
+}
+
+model Session {
+  id        String     @id @default(cuid())
+  tokenHash String     @unique
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+// ── Serviços ──────────────────────────────────────────────────────────────────
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  services    Service[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  name            String
+  description     String?   @db.Text
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // Preços em centavos da moeda (CVE: 2200$ = 220000 centavos)
+  priceMin        Int
+  priceMax        Int?
+  // Duração do tratamento em minutos
+  durationMin     Int
+  // Pausa a exigir após este tratamento antes de nova marcação
+  gapAfterMinutes Int       @default(0)
+  isActive        Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  imageUrl        String?
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  appointments        Appointment[]
+  professionalServices ProfessionalService[]
+
+  @@index([isActive, sortOrder])
+  @@index([categoryId])
+}
+
+model Professional {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  title       String?
+  description String?  @db.Text
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services       ProfessionalService[]
+  availabilities Availability[]
+  blockedPeriods BlockedPeriod[]
+  appointments   Appointment[]
+}
+
+model ProfessionalService {
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([professionalId, serviceId])
+  @@index([serviceId])
+}
+
+// Semana: 0 = domingo … 6 = sábado. Várias janelas por dia (ex.: pausa de almoço).
+model Availability {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  weekday        Int
+  startMinute    Int
+  endMinute      Int
+  isActive       Boolean      @default(true)
+
+  @@index([professionalId, weekday])
+}
+
+enum BlockType {
+  PAUSE    // pausa pontual num dia
+  VACATION // férias
+  HOLIDAY  // feriado
+  CLOSURE  // encerramento excepcional
+  BLOCK    // bloqueio manual
+}
+
+// Bloqueio de disponibilidade. professionalId nulo = aplica-se a todo o estúdio.
+// startMinute/endMinute nulos = dia completo.
+model BlockedPeriod {
+  id             String       @id @default(cuid())
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  type           BlockType    @default(BLOCK)
+  startDate      DateTime     @db.Date
+  endDate        DateTime     @db.Date
+  startMinute    Int?
+  endMinute      Int?
+  reason         String?
+  createdAt      DateTime     @default(now())
+
+  @@index([startDate, endDate])
+  @@index([professionalId])
+}
+
+// ── Clientes e marcações ─────────────────────────────────────────────────────
+
+model Customer {
+  id          String        @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  notes       String?       @db.Text
+  consentAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  appointments Appointment[]
+
+  @@index([phone])
+  @@index([email])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum EventActor {
+  CUSTOMER
+  ADMIN
+  SYSTEM
+}
+
+enum EventType {
+  CREATED
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  NOTIFIED
+  UPDATED
+}
+
+model Appointment {
+  id              String           @id @default(cuid())
+  reference       String           @unique
+  customerId      String
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  serviceId       String
+  service         Service          @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  professionalId  String
+  professional    Professional     @relation(fields: [professionalId], references: [id], onDelete: Restrict)
+  // Momentos em UTC
+  startAt         DateTime
+  endAt           DateTime
+  status          AppointmentStatus @default(PENDING)
+  // Preço do serviço no momento da marcação (centavos)
+  priceAtBooking  Int
+  notes           String?          @db.Text
+  cancelReason    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  events AppointmentEvent[]
+
+  @@index([professionalId, startAt])
+  @@index([status, startAt])
+  @@index([customerId, startAt])
+  @@index([serviceId, startAt])
+}
+
+model AppointmentEvent {
+  id            String     @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  type          EventType
+  actor         EventActor @default(SYSTEM)
+  description   String?
+  createdAt     DateTime   @default(now())
+
+  @@index([appointmentId, createdAt])
+}
+
+// ── Conteúdo do site ─────────────────────────────────────────────────────────
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  title     String?
+  alt       String?
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([isVisible, sortOrder])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  customerName String
+  rating      Int
+  text        String   @db.Text
+  isPublished Boolean  @default(false)
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([isPublished])
+}
+
+// ── Configuração da marca (linha única, id = 1) ─────────────────────────────
+
+model BusinessSettings {
+  id Int      @id @default(1)
+
+  // Marca / conteúdo
+  brandName    String  @default("Carmix Nails")
+  ownerName    String  @default("Carmo Gomes")
+  tagline      String?
+  heroTitle    String?
+  heroSubtitle String?
+  heroImageUrl String?
+  aboutTitle   String?
+  aboutText    String? @db.Text
+  aboutImageUrl String?
+
+  // Contacto
+  phone     String?
+  whatsApp  String?
+  email     String?
+  address   String?
+  city      String?
+  mapsUrl   String?
+  instagram String?
+  facebook  String?
+  tiktok    String?
+
+  // Agendamento
+  timezone             String  @default("Atlantic/Cape_Verde")
+  currency             String  @default("CVE")
+  slotIntervalMinutes  Int     @default(15)
+  minLeadMinutes       Int     @default(60)
+  maxLeadDays          Int     @default(60)
+  autoConfirm          Boolean @default(false)
+  bookingEnabled       Boolean @default(true)
+  minCancelHours       Int     @default(24)
+  allowReschedule      Boolean @default(true)
+  cancelPolicyText     String? @db.Text
+  servicesNote         String? @db.Text
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  updatedAt DateTime @updatedAt
+}

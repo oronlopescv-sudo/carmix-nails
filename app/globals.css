@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bordo: #850b36;
+  --color-bordo-dark: #6d0930;
+  --color-malva: #a94c80;
+  --color-malva-soft: #d9a9c6;
+  --color-dourado: #c99a42;
+  --color-dourado-light: #e7cf9f;
+  --color-nude: #f2e5e8;
+  --color-creme: #fffcf8;
+  --color-casca: #f8f0f3;
+  --color-tinta: #30232a;
+  --color-tinta-soft: #6b5560;
+
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float-slow: float-slow 9s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-creme);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-malva);
+  color: white;
+}
+
+/* Texto padrão legível em páginas de conteúdo */
+.prose-carmix :is(p) {
+  margin-bottom: 0.9em;
+  line-height: 1.75;
+}
+
+/* Focus visível e coerente para acessibilidade */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-malva);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Inputs base partilhados */
+.field {
+  width: 100%;
+  border-radius: 0.7rem;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  color: var(--color-tinta);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field::placeholder {
+  color: #b49aa6;
+}
+.field:focus {
+  border-color: var(--color-malva);
+  box-shadow: 0 0 0 3px rgb(169 76 128 / 0.15);
+  outline: none;
+}
+.field-error {
+  border-color: #be123c;
+  box-shadow: 0 0 0 3px rgb(190 18 60 / 0.08);
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-tinta-soft);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}

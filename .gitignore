@@ -1,0 +1,20 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Ambiente e segredos — nunca commitar
+.env
+.env.local
+.env.runtime
+*.pem
+
+# Ficheiros carregados no painel (fotos de serviços/galeria) e dados locais
+/data/
+/uploads/
+public/uploads/
+
+# Sistema
+.DS_Store
+*.log
