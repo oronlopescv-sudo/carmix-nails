@@ -172,7 +172,7 @@ export default async function AgendamentosPage({ searchParams }: Params) {
           <div className="space-y-3">
             {rows.map((r) => (
               <div key={r.id} className="rounded-2xl bg-creme p-5 ring-1 ring-nude">
-                <AppointmentActions appt={r} timezone={s.timezone} currency={s.currency} />
+                <AppointmentActions appt={r} timezone={s.timezone} currency={s.currency} brandName={s.brandName} />
               </div>
             ))}
             {filtered.length === 0 && !q && (

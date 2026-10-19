@@ -4,7 +4,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, History, CalendarClock, XCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, History, CalendarClock, XCircle, CheckCircle2, MessageCircle } from "lucide-react";
 import { cx } from "@/lib/utils";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/constants";
 import { formatPrice } from "@/lib/pricing";
@@ -20,7 +20,7 @@ import type { AppointmentRowData } from "@/types/admin";
 
 type Slot = { minutes: number; time: string; iso: string };
 
-export function AppointmentActions({ appt, timezone, currency }: { appt: AppointmentRowData; timezone: string; currency: string }) {
+export function AppointmentActions({ appt, timezone, currency, brandName }: { appt: AppointmentRowData; timezone: string; currency: string; brandName: string }) {
   const router = useRouter();
   const cancelReasonRef = useRef<HTMLTextAreaElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -110,6 +110,17 @@ export function AppointmentActions({ appt, timezone, currency }: { appt: Appoint
             >
               <CheckCircle2 className="h-4 w-4" /> Confirmar
             </button>
+          )}
+          {["PENDING", "CONFIRMED"].includes(appt.status) && appt.customerPhone && (
+            <a
+              href={waLink(appt.customerPhone, whatsappMessage(appt, startWall, brandName))}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir o WhatsApp com a mensagem da marcação pronta a enviar"
+              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2 text-[13.5px] font-medium text-emerald-700 ring-1 ring-emerald-200 transition hover:opacity-85"
+            >
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </a>
           )}
           {active && (
             <button
@@ -285,6 +296,28 @@ export function AppointmentActions({ appt, timezone, currency }: { appt: Appoint
 }
 
 /* utilitários locais */
+
+function fmtHM(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
+
+/** Mensagem pronta para a cliente, conforme o estado da marcação. */
+function whatsappMessage(appt: AppointmentRowData, wall: { day: number; month: number; hour: number; minute: number }, brand: string): string {
+  const dia = `${String(wall.day).padStart(2, "0")}/${String(wall.month).padStart(2, "0")}`;
+  const hora = fmtHM(wall.hour * 60 + wall.minute);
+  if (appt.status === "CONFIRMED") {
+    return `Olá ${appt.customerName}! A sua marcação no ${brand} está confirmada: ${appt.service}, ${dia} às ${hora}. Até já! 🌸`;
+  }
+  return `Olá ${appt.customerName}! Recebemos o seu pedido de marcação no ${brand}: ${appt.service}, ${dia} às ${hora}. Confirmamos de seguida. 🌸`;
+}
+
+/** wa.me usa número internacional. Sem indicativo: assume Cabo Verde (238). */
+function waLink(phone: string, message: string): string {
+  let d = phone.replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 9) d = "238" + d;
+  return `https://wa.me/${d}?text=${encodeURIComponent(message)}`;
+}
 function isoOf(isoUTC: string, tz: string): { year: number; month: number; day: number; hour: number; minute: number } {
   const d = new Date(isoUTC);
   const f = new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -299,9 +332,6 @@ function isoOf(isoUTC: string, tz: string): { year: number; month: number; day: 
   };
 }
 
-function fmtHM(min: number): string {
-  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
-}
 
 function dayStripOptions(currentISO: string) {
   const [y, m, d] = currentISO.split("-").map(Number);
