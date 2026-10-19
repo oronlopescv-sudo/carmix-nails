@@ -149,25 +149,29 @@ async function main() {
 
   for (const [i, s] of SERVICES.entries()) {
     const existing = await db.service.findUnique({ where: { slug: s.slug } });
-    const data = {
-      name: s.name,
-      slug: s.slug,
-      description: s.description ?? null,
-      categoryId: catIds.get(s.cat) ?? null,
-      priceMin: s.priceMin,
-      priceMax: s.priceMax ?? null,
-      durationMin: s.duration,
-      gapAfterMinutes: s.gapAfter ?? 0,
-      isActive: true,
-      isFeatured: Boolean(s.featured),
-      sortOrder: i,
-    };
     if (existing) {
-      await db.service.update({ where: { id: existing.id }, data });
-    } else {
-      await db.service.create({ data });
+      // Já existe: NÃO se reescreve. Se o dono editou nome/preço/foto no
+      // painel, essa edição tem de sobreviver a futuras corridas do seed
+      // (novos deploys). O seed só cria o que falta.
+      continue;
     }
+    await db.service.create({
+      data: {
+        name: s.name,
+        slug: s.slug,
+        description: s.description ?? null,
+        categoryId: catIds.get(s.cat) ?? null,
+        priceMin: s.priceMin,
+        priceMax: s.priceMax ?? null,
+        durationMin: s.duration,
+        gapAfterMinutes: s.gapAfter ?? 0,
+        isActive: true,
+        isFeatured: Boolean(s.featured),
+        sortOrder: i,
+      },
+    });
   }
+  console.log("  serviços existentes não reescritos (edições do dono no painel preservadas)");
 
   // ── Fotografias de stock (Unsplash, licença livre) — TEMPORÁRIAS ───────────
   // Colocadas só enquanto a galeria/hero estão vazias, para o site não nascer
