@@ -91,8 +91,9 @@ async function main() {
 
   /* 4. sessão admin real */
   const token = crypto.randomBytes(36).toString("hex");
-  const usr = await db.user.findUnique({ where: { email: "admin@test.carmix" } });
-  if (!usr) throw new Error("admin de teste inexistente");
+  // usa a primeira conta admin real (o dono cria a sua própria via npm run create-admin)
+  const usr = await db.user.findFirst({ where: { role: "ADMIN", isActive: true } });
+  if (!usr) throw new Error("sem conta admin — corre primeiro: npm run create-admin");
   await db.session.create({
     data: { tokenHash: sha256hex(token), userId: usr.id, expiresAt: new Date(Date.now() + 3_600_000), ip: "127.0.0.1", userAgent: "e2e" },
   });

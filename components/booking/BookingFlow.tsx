@@ -226,7 +226,10 @@ export default function BookingFlow({
     setStep(4);
   }
 
-  const months = useMemo(() => buildMonths(Number(maxDay.slice(0, 4)), Number(maxDay.slice(5, 7)), monthsToShow), [maxDay, monthsToShow]);
+  // O calendário começa no mês de parede do estúdio (todayISO), não no mês UTC:
+  // no fuso UTC−1, junto à viragem de mês a versão UTC esconderia as horas de
+  // "hoje" (o próprio dia).
+  const months = useMemo(() => buildMonths(todayISO, maxDay, monthsToShow), [todayISO, maxDay, monthsToShow]);
 
   // ── Ecrã final ────────────────────────────────────────────────────────────
   if (done) {
@@ -596,11 +599,12 @@ export default function BookingFlow({
 }
 
 /* ── utilitários ───────────────────────────────────────────────────────────── */
-function buildMonths(maxYear: number, maxMonth: number, n: number): Array<{ year: number; month: number }> {
-  const now = new Date();
+function buildMonths(todayISO: string, maxDay: string, n: number): Array<{ year: number; month: number }> {
   const out: Array<{ year: number; month: number }> = [];
-  let y = now.getUTCFullYear();
-  let m = now.getUTCMonth() + 1;
+  let y = Number(todayISO.slice(0, 4));
+  let m = Number(todayISO.slice(5, 7));
+  const maxYear = Number(maxDay.slice(0, 4));
+  const maxMonth = Number(maxDay.slice(5, 7));
   for (let i = 0; i < n; i++) {
     out.push({ year: y, month: m });
     if (y === maxYear && m >= maxMonth) break;

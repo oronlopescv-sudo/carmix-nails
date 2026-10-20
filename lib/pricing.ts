@@ -12,9 +12,12 @@ export function formatPrice(cents: number, currency: string): string {
       currency: "EUR",
     }).format(cents / 100);
   }
-  // CVE — formato cabo-verdiano: 2.200$00
+  // CVE — formato cabo-verdiano do precário: 2.200$00 (pt-PT agrupa com espaço
+  // fino; convertemos para ponto, como o dono escreve na tabela).
   const value = Math.round(cents / 100);
-  const grouped = new Intl.NumberFormat("pt-PT", { useGrouping: true }).format(value);
+  const grouped = new Intl.NumberFormat("pt-PT", { useGrouping: true })
+    .format(value)
+    .replace(/[\s  ]/g, ".");
   return `${grouped}$00`;
 }
 
