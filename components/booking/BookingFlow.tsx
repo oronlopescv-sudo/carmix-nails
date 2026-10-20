@@ -375,6 +375,23 @@ export default function BookingFlow({
       {step === 0 && (
         <div>
           <h2 className="font-display text-2xl text-bordo">Que serviço quer marcar?</h2>
+          {groups.length === 0 && (
+            // sem serviços (nenhum ativo, ou base de dados indisponível): nunca ecrã vazio
+            <div className="mt-5 rounded-2xl bg-casca px-5 py-5 text-[14.5px] text-tinta-soft ring-1 ring-nude">
+              <p>De momento não há serviços disponíveis para marcação online.</p>
+              <p className="mt-2">
+                Pode{" "}
+                <Link href="/contactos" className="font-medium text-malva underline underline-offset-2">
+                  contactar o estúdio
+                </Link>{" "}
+                ou{" "}
+                <Link href="/servicos" className="font-medium text-malva underline underline-offset-2">
+                  ver os serviços e preços
+                </Link>
+                .
+              </p>
+            </div>
+          )}
           {groups.map((g) => (
             <div key={g.name} className="mt-5 first:mt-0">
               <p className="label">{g.name}</p>
