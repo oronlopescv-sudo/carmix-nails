@@ -193,6 +193,7 @@ function Panel({ ...props }: {
 
   // remarcação
   const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+  const [maxDay, setMaxDay] = useState<string>("");
   const [daysNote, setDaysNote] = useState<string | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slots, setSlots] = useState<SlotDTO[]>([]);
@@ -207,8 +208,10 @@ function Panel({ ...props }: {
     getOpenDaysAction(serviceId, professionalId)
       .then((r) => {
         if (alive) {
-          if (r.ok) setOpenDays(new Set(r.days));
-          else setDaysNote(r.error);
+          if (r.ok) {
+            setOpenDays(new Set(r.days));
+            setMaxDay(r.maxDay);
+          } else setDaysNote(r.error);
         }
       })
       .catch(() => {
@@ -269,9 +272,16 @@ function Panel({ ...props }: {
     });
     setBusy(false);
     if (!res.ok) {
+      // mantém o painel aberto para a cliente escolher outra hora; se o horário
+      // foi tomado, recarrega as horas desse dia
       setError(res.error);
-      setMode(null);
       setNewSlot(null);
+      if (res.error.includes("disponível") && pickedDay) {
+        setSlotsLoading(true);
+        const r = await getSlotsAction(serviceId, professionalId, pickedDay);
+        setSlotsLoading(false);
+        if (r.ok) setSlots(r.slots);
+      }
       return;
     }
     setMode(null);
@@ -353,7 +363,7 @@ function Panel({ ...props }: {
             <div className="mt-6 rounded-[1.5rem] bg-casca p-5 ring-1 ring-nude">
               <p className="label">Escolha a nova data</p>
               <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-                {daysStrip(todayISO, openDays).map((d) => (
+                {daysStrip(todayISO, maxDay).map((d) => (
                   <button
                     key={d.iso}
                     type="button"
@@ -440,14 +450,18 @@ function Panel({ ...props }: {
   );
 }
 
-/* gera ~28 dias a partir de hoje */
-function daysStrip(todayISO: string, openDays: Set<string>) {
+/* gera os dias desde hoje até ao limite de marcação do estúdio (máx. 120 dias) */
+function daysStrip(todayISO: string, maxDayISO: string) {
   const [ty, tm, td] = todayISO.split("-").map(Number);
   const out: Array<{ iso: string; day: number; wdLabel: string }> = [];
   const base = Date.UTC(ty, tm - 1, td);
   const WD = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-  for (let i = 0; i < 28; i++) {
-    const d = new Date(base + i * 86_400_000);
+  const [my, mm, md] = (maxDayISO || todayISO).split("-").map(Number);
+  const endMs = Date.UTC(my, mm - 1, md);
+  for (let i = 0; i <= 120; i++) {
+    const ms = base + i * 86_400_000;
+    if (ms > endMs) break;
+    const d = new Date(ms);
     const iso = dayISO({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() });
     out.push({ iso, day: d.getUTCDate(), wdLabel: WD[(d.getUTCDay() + 6) % 7] });
   }

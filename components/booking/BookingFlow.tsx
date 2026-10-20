@@ -454,7 +454,10 @@ export default function BookingFlow({
           )}
           <button
             type="button"
-            onClick={() => setStep(0)}
+            onClick={() => {
+              openDaysLoadedFor.current = null;
+              setStep(0);
+            }}
             className="mt-6 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-malva hover:text-bordo"
           >
             <ArrowLeft className="h-4 w-4" /> Escolher outro serviço
@@ -582,7 +585,11 @@ export default function BookingFlow({
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <button
               type="button"
-              onClick={() => setStep(pros.length === 1 ? 0 : 1)}
+              onClick={() => {
+                // voltar atrás não pode reutilizar dias carregados antes
+                openDaysLoadedFor.current = null;
+                setStep(pros.length === 1 ? 0 : 1);
+              }}
               className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-malva hover:text-bordo"
             >
               <ArrowLeft className="h-4 w-4" /> Voltar

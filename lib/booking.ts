@@ -180,10 +180,14 @@ export async function createBooking(input: CreateBookingInput): Promise<{
         where: { phone: { in: phoneVariants } },
       });
       if (customer) {
+        // o e-mail de um cliente existente NUNCA é substituído por uma marcação
+        // nova (quem só conhece o telefone não pode tomar o controlo das marcações
+        // anteriores, que são validadas pelo e-mail). Só preenche se estiver vazio.
+        const fillEmail = !customer.email && input.email ? input.email : undefined;
         customer = await tx.customer.update({
           where: { id: customer.id },
           data: {
-            email: input.email ?? (undefined as string | null | undefined),
+            email: fillEmail,
             consentAt: input.consent ? new Date() : undefined,
           },
         });
@@ -385,7 +389,9 @@ export async function rescheduleBookingAsCustomer(input: {
           `Por política do estúdio, só é possível remarcar online até ${settings.minCancelHours} h antes. Contacte-nos, por favor.`,
         );
       }
-      const slots = await getDaySlots(tx, appt.professionalId, service, day, settings as SettingsLike);
+      const slots = await getDaySlots(tx, appt.professionalId, service, day, settings as SettingsLike, {
+        excludeApptId: appt.id,
+      });
       if (!slots.some((s) => s.minutes === input.minutes)) {
         throw new BookingError("SLOT_UNAVAILABLE", "O novo horário não está disponível. Escolha outro, por favor.");
       }
@@ -509,6 +515,7 @@ export async function rescheduleAppointmentAsAdmin(
       }
       const slots = await getDaySlots(tx, current.professionalId, service, day, settings as SettingsLike, {
         ignoreLeadTime: true,
+        excludeApptId: id,
       });
       if (!slots.some((s) => s.minutes === minutes)) {
         throw new BookingError("SLOT_UNAVAILABLE", "O novo horário não está disponível.");

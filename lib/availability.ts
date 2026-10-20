@@ -137,6 +137,7 @@ async function loadDayData(
   professionalId: string,
   day: DayParts,
   tz: string,
+  excludeApptId?: string,
 ): Promise<{ windows: Window[]; pauses: Window[]; busy: Array<{ start: number; end: number }> }> {
   const weekday = weekdayOfDay(day);
   const todayISO = dayISO(day);
@@ -167,6 +168,8 @@ async function loadDayData(
         startAt: { lt: dayEnd },
         // margem à esquerda para apanhar marcações cujo intervalo se estende para dentro do dia
         endAt: { gt: new Date(dayStart.getTime() - 6 * 60 * 60_000) },
+        // a marcação que está a ser remarcada não bloqueia o próprio novo horário
+        ...(excludeApptId ? { id: { not: excludeApptId } } : {}),
       },
       select: { startAt: true, endAt: true, service: { select: { gapAfterMinutes: true } } },
     }),
@@ -204,10 +207,15 @@ export async function getDaySlots(
   service: Pick<Service, "durationMin" | "gapAfterMinutes">,
   day: DayParts,
   settings: SettingsLike,
-  opts: { now?: Date; ignoreLeadTime?: boolean; extraConflicts?: BookingConflict[] } = {},
+  opts: {
+    now?: Date;
+    ignoreLeadTime?: boolean;
+    extraConflicts?: BookingConflict[];
+    excludeApptId?: string;
+  } = {},
 ): Promise<Slot[]> {
   const tz = settings.timezone;
-  const { windows, pauses, busy } = await loadDayData(dbi, professionalId, day, tz);
+  const { windows, pauses, busy } = await loadDayData(dbi, professionalId, day, tz, opts.excludeApptId);
   const allBusy = busy.concat(
     (opts.extraConflicts ?? []).map((c) => ({
       start: c.startAt.getTime(),
