@@ -18,6 +18,25 @@ export async function saveProfessionalAction(input: unknown): Promise<ActionResu
     if (data.id) {
       const existing = await db.professional.findUnique({ where: { id: data.id } });
       if (!existing) return { ok: false, error: "Profissional inexistente." };
+      const now = new Date();
+      const futureActive = { professionalId: data.id, status: { in: ["PENDING", "CONFIRMED"] as Array<"PENDING" | "CONFIRMED"> }, startAt: { gte: now } };
+      // desativar ou retirar serviços com marcações futuras deixaria essas marcações
+      // órfãs de disponibilidade/serviço: exige tratá-las primeiro
+      if (!data.isActive && existing.isActive) {
+        const n = await db.appointment.count({ where: futureActive });
+        if (n > 0) {
+          return { ok: false, error: `Este profissional tem ${n} marcação(ões) futura(s). Remarque-as ou cancele-as antes de o desativar.` };
+        }
+      }
+      const keptServices = new Set(data.serviceIds);
+      const current = await db.professionalService.findMany({ where: { professionalId: data.id }, select: { serviceId: true } });
+      const removed = current.map((c: { serviceId: string }) => c.serviceId).filter((sid: string) => !keptServices.has(sid));
+      if (removed.length > 0) {
+        const n = await db.appointment.count({ where: { ...futureActive, serviceId: { in: removed } } });
+        if (n > 0) {
+          return { ok: false, error: `Há ${n} marcação(ões) futura(s) com um serviço que está a retirar deste profissional. Trate-as primeiro.` };
+        }
+      }
       const updated = await db.professional.update({
         where: { id: data.id },
         data: {

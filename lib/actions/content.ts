@@ -94,6 +94,8 @@ export async function saveReviewAction(input: unknown): Promise<ActionResult<{ i
   if (!parsed.ok) return { ok: false, error: "Verifique o testemunho.", fieldErrors: parsed.fieldErrors };
   const data = parsed.data;
   if (data.id) {
+    const existing = await db.review.findUnique({ where: { id: data.id }, select: { id: true } });
+    if (!existing) return { ok: false, error: "Testemunho inexistente. Recarregue a página." };
     await db.review.update({
       where: { id: data.id },
       data: {

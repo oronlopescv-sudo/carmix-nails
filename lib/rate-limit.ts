@@ -54,5 +54,10 @@ export function clientIp(headers: Headers): string {
       .filter(Boolean);
     if (parts.length > 0) return parts[parts.length - 1]!;
   }
-  return headers.get("x-real-ip") ?? "127.0.0.1";
+  const real = headers.get("x-real-ip");
+  if (real) return real;
+  // sem IP na infraestrutura: separar por user-agent em vez de um único balde
+  // global (todos os clientes partilhariam o mesmo limite de 60/min)
+  const ua = (headers.get("user-agent") ?? "desconhecido").slice(0, 120);
+  return `ua:${ua}`;
 }
