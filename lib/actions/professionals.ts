@@ -60,6 +60,18 @@ export async function saveProfessionalAction(input: unknown): Promise<ActionResu
         data: data.serviceIds.map((serviceId) => ({ professionalId: created.id, serviceId })),
       });
     }
+    // horário padrão (igual ao seed): sem janelas o calendário de marcação
+    // fica sem dias abertos para este profissional. Editável em Horários.
+    // Seg–Sex 08:30–17:30, Sáb 08:30–13:00, Dom fechado.
+    const defaultRows = [1, 2, 3, 4, 5].map((weekday) => ({
+      professionalId: created.id,
+      weekday,
+      startMinute: 510,
+      endMinute: 1050,
+      isActive: true,
+    }));
+    defaultRows.push({ professionalId: created.id, weekday: 6, startMinute: 510, endMinute: 780, isActive: true });
+    await db.availability.createMany({ data: defaultRows });
     await logAudit({ userId: user.id, action: "professional.create", entity: "professional", entityId: created.id });
     return { ok: true, id: created.id };
   } catch (err) {

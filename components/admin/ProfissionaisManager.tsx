@@ -214,6 +214,11 @@ export default function ProfissionaisManager({
                   <p className="mt-1 text-[12.5px] text-tinta-soft">
                     {p.serviceIds.length} serviço(s) · {p.windows.length} janela(s) de horário{p.isActive ? "" : " · inativo"}
                   </p>
+                  {p.windows.length === 0 && p.isActive && (
+                    <p className="mt-1 text-[12.5px] font-medium text-amber-700">
+                      Sem horário definido — o calendário de marcação não mostra dias para esta pessoa. Defina as janelas abaixo.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
