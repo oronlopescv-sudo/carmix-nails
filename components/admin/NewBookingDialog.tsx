@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
 import { cx } from "@/lib/utils";
-import { WEEKDAY_SHORT, MONTH_LABELS } from "@/lib/constants";
+import { WEEKDAY_SHORT_MON, MONTH_LABELS } from "@/lib/constants";
 import { adminCreateManualAppointmentAction, adminSlotsAction } from "@/lib/actions/bookings-admin";
 import type { ServiceOption, ProOption } from "@/components/booking/BookingFlow";
 
@@ -238,5 +238,5 @@ export default function NewBookingDialog({
 function dayLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  return `${WEEKDAY_SHORT[(dt.getUTCDay() + 6) % 7]} ${d} ${MONTH_LABELS[m - 1]}`;
+  return `${WEEKDAY_SHORT_MON[(dt.getUTCDay() + 6) % 7]} ${d} ${MONTH_LABELS[m - 1]}`;
 }

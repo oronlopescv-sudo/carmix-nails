@@ -12,6 +12,10 @@ export const WEEKDAY_LABELS = [
 
 export const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
 
+// Ordem segunda-primeira — para calendários cuja grelha começa à segunda e
+// termina no domingo (índice do dia: (getUTCDay() + 6) % 7)
+export const WEEKDAY_SHORT_MON = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] as const;
+
 export const MONTH_LABELS = [
   "Janeiro",
   "Fevereiro",

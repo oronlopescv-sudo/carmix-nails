@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { ArrowLeft, Check, Scissors, CalendarHeart, Loader2 } from "lucide-react";
 import { cx } from "@/lib/utils";
-import { MONTH_LABELS, WEEKDAY_SHORT } from "@/lib/constants";
+import { MONTH_LABELS, WEEKDAY_SHORT_MON } from "@/lib/constants";
 import { formatPriceRange } from "@/lib/pricing";
 import { createBookingAction, getSlotsAction, getOpenDaysAction } from "@/lib/actions/booking";
 import type { SlotDTO } from "@/types/actions";
@@ -73,7 +73,7 @@ function MonthGrid({
         {MONTH_LABELS[month - 1]} {year}
       </p>
       <div className="grid grid-cols-7 gap-1 text-center text-[11.5px] text-tinta-soft">
-        {WEEKDAY_SHORT.map((w, i) => (
+        {WEEKDAY_SHORT_MON.map((w, i) => (
           <span key={i}>{w}</span>
         ))}
       </div>
@@ -129,8 +129,13 @@ export default function BookingFlow({
 
   const [openDays, setOpenDays] = useState<Set<string>>(new Set());
   const [maxDay, setMaxDay] = useState<string>("");
+  const [openDaysError, setOpenDaysError] = useState<string | null>(null);
+  const [openDaysLoading, setOpenDaysLoading] = useState(false);
   const [slots, setSlots] = useState<SlotDTO[]>([]);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [reloadOpenDays, setReloadOpenDays] = useState(0);
+  const [reloadSlots, setReloadSlots] = useState(0);
   const [monthsToShow, setMonthsToShow] = useState(1);
 
   const [topError, setTopError] = useState<string | null>(null);
@@ -160,21 +165,58 @@ export default function BookingFlow({
   useEffect(() => {
     if (step === 1 && pros.length === 1) {
       setProId(pros[0].id);
+      setDateISO(null);
+      setSlot(null);
       setStep(2);
     }
   }, [step, pros]);
 
-  // ao entrar no passo 2 (ou trocar de profissional): carregar dias abertos
+  // ao entrar no passo 2 (ou trocar serviço/profissional): carregar dias abertos
   useEffect(() => {
-    if (step === 2 && serviceId && proId && openDaysLoadedFor.current !== proId) {
-      openDaysLoadedFor.current = proId;
-      setOpenDays(new Set());
-      getOpenDaysAction(serviceId, proId).then((r) => {
-        setOpenDays(new Set(r.days));
-        setMaxDay(r.maxDay);
+    if (step !== 2 || !serviceId || !proId) return;
+    // chave composta: a disponibilidade depende de serviço E profissional —
+    // trocar só um deles tem de recarregar
+    const key = `${serviceId}:${proId}`;
+    if (openDaysLoadedFor.current === key) return;
+    openDaysLoadedFor.current = key;
+    let alive = true;
+    setOpenDays(new Set());
+    setMaxDay("");
+    setOpenDaysError(null);
+    setOpenDaysLoading(true);
+    getOpenDaysAction(serviceId, proId)
+      .then((r) => {
+        if (!alive) return;
+        if (r.ok) {
+          setOpenDays(new Set(r.days));
+          setMaxDay(r.maxDay);
+        } else {
+          setOpenDaysError(r.error);
+        }
+      })
+      .catch(() => {
+        if (alive) setErrorDaysGeneric();
+      })
+      .finally(() => {
+        if (alive) setOpenDaysLoading(false);
       });
-    }
-  }, [step, serviceId, proId]);
+    return () => {
+      alive = false;
+    };
+  }, [step, serviceId, proId, reloadOpenDays]);
+
+  function setErrorDaysGeneric() {
+    setOpenDaysError("Não foi possível carregar a disponibilidade. Verifique a ligação e tente de novo.");
+  }
+
+  function retryOpenDays() {
+    openDaysLoadedFor.current = null;
+    setReloadOpenDays((n) => n + 1);
+  }
+
+  function retrySlots() {
+    setReloadSlots((n) => n + 1);
+  }
 
   // ao escolher dia: carregar slots
   useEffect(() => {
@@ -182,15 +224,23 @@ export default function BookingFlow({
     let alive = true;
     setLoadingSlots(true);
     setSlots([]);
-    getSlotsAction(serviceId, proId, dateISO).then((r) => {
-      if (!alive) return;
-      setSlots(r);
-      setLoadingSlots(false);
-    });
+    setSlotsError(null);
+    getSlotsAction(serviceId, proId, dateISO)
+      .then((r) => {
+        if (!alive) return;
+        if (r.ok) setSlots(r.slots);
+        else setSlotsError(r.error);
+      })
+      .catch(() => {
+        if (alive) setSlotsError("Não foi possível carregar as horas. Tente de novo.");
+      })
+      .finally(() => {
+        if (alive) setLoadingSlots(false);
+      });
     return () => {
       alive = false;
     };
-  }, [dateISO, serviceId, proId]);
+  }, [dateISO, serviceId, proId, reloadSlots]);
 
   async function onSubmit(values: FormValues) {
     setTopError(null);
@@ -215,7 +265,9 @@ export default function BookingFlow({
         }
       }
       setTopError(res.error ?? "Não foi possível criar a marcação.");
-      if (res.error.includes("indisponi") || res.error.includes("reservado") || res.error.includes("conflito")) {
+      // código do servidor manda a recuperação — era texto a casar com texto,
+      // que nunca casava ("disponível" ≠ "indisponi"/"reservado")
+      if (res.code === "SLOT_UNAVAILABLE") {
         // horário foi reservado por outra pessoa → voltar a escolher hora
         setStep(2);
         setSlot(null);
@@ -230,6 +282,11 @@ export default function BookingFlow({
   // no fuso UTC−1, junto à viragem de mês a versão UTC esconderia as horas de
   // "hoje" (o próprio dia).
   const months = useMemo(() => buildMonths(todayISO, maxDay, monthsToShow), [todayISO, maxDay, monthsToShow]);
+  // "Ver mais meses" só faz sentido enquanto há mês seguinte e dentro do limite
+  // (antes aparecia mesmo já terminado no máximo do calendário)
+  const lastShown = months[months.length - 1];
+  const atMaxMonth = !!maxDay && !!lastShown && lastShown.year === Number(maxDay.slice(0, 4)) && lastShown.month === Number(maxDay.slice(5, 7));
+  const canShowMoreMonths = !!maxDay && !atMaxMonth && months.length < 3;
 
   // ── Ecrã final ────────────────────────────────────────────────────────────
   if (done) {
@@ -320,6 +377,11 @@ export default function BookingFlow({
                   setProId(null);
                   setDateISO(null);
                   setSlot(null);
+                  // a disponibilidade é por serviço+profissional — tudo reinicia
+                  openDaysLoadedFor.current = null;
+                  setOpenDays(new Set());
+                  setMaxDay("");
+                  setOpenDaysError(null);
                   setStep(1);
                 }}
                 className="group flex items-center justify-between gap-3 rounded-2xl bg-creme px-5 py-4 text-left ring-1 ring-nude transition hover:ring-malva-soft"
@@ -350,6 +412,7 @@ export default function BookingFlow({
       {step === 1 && (
         <div>
           <h2 className="font-display text-2xl text-bordo">Com quem prefere marcar?</h2>
+          {pros.length > 0 ? (
           <div className="mt-5 grid gap-2.5">
             {pros.map((p) => (
               <button
@@ -373,6 +436,11 @@ export default function BookingFlow({
               </button>
             ))}
           </div>
+          ) : (
+            <p className="mt-5 rounded-2xl bg-casca px-5 py-4 text-[14px] text-tinta-soft ring-1 ring-nude">
+              Este serviço ainda não tem profissional associado no painel — escolha outro serviço por favor.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => setStep(0)}
@@ -405,7 +473,7 @@ export default function BookingFlow({
                 />
               ))}
             </div>
-            {monthsToShow * 2 < 6 && (
+            {canShowMoreMonths && (
               <div className="mt-4 text-center">
                 <button
                   type="button"
@@ -416,6 +484,31 @@ export default function BookingFlow({
                 </button>
               </div>
             )}
+            {openDaysLoading && (
+              <p className="mt-4 flex items-center gap-2 text-[13px] text-tinta-soft">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> A carregar os dias com disponibilidade…
+              </p>
+            )}
+            {openDaysError && (
+              <p
+                role="alert"
+                className="mt-4 flex flex-wrap items-center gap-x-2 rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700 ring-1 ring-rose-200"
+              >
+                {openDaysError}
+                <button
+                  type="button"
+                  onClick={retryOpenDays}
+                  className="font-medium underline underline-offset-2"
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            )}
+            {!openDaysLoading && !openDaysError && maxDay && openDays.size === 0 && (
+              <p className="mt-4 rounded-lg bg-nude px-3 py-2 text-[13px] text-tinta-soft">
+                Não há dias abertos na janela de marcação para este serviço — ligue ao estúdio por favor.
+              </p>
+            )}
           </div>
 
           {dateISO && (
@@ -424,6 +517,19 @@ export default function BookingFlow({
                 <p className="flex items-center gap-2 py-2 text-[14px] text-tinta-soft">
                   <Loader2 className="h-4 w-4 animate-spin" /> A ver horários disponíveis…
                 </p>
+              ) : slotsError ? (
+                <div className="py-2">
+                  <p role="alert" className="text-[14px] text-rose-700">
+                    {slotsError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={retrySlots}
+                    className="mt-2 text-[13.5px] font-medium text-malva underline underline-offset-2 hover:text-bordo"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
               ) : slots.length === 0 ? (
                 <p className="py-2 text-[14px] text-tinta-soft">
                   Este dia já não tem horas livres. Escolha outro dia (dias com ponto têm disponibilidade).

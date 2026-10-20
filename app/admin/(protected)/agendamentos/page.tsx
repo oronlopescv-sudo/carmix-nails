@@ -4,7 +4,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { wallNow, wallToUtc, dayISO, addDaysParts, utcToWall, weekdayOfDay } from "@/lib/tz";
-import { STATUS_LABELS, STATUS_COLORS, WEEKDAY_SHORT } from "@/lib/constants";
+import { STATUS_LABELS, STATUS_COLORS, WEEKDAY_SHORT_MON } from "@/lib/constants";
 import { formatPrice } from "@/lib/pricing";
 import { AppointmentActions } from "@/components/admin/AppointmentActions";
 import NewBookingDialog from "@/components/admin/NewBookingDialog";
@@ -194,7 +194,7 @@ export default async function AgendamentosPage({ searchParams }: Params) {
         {view === "month" && (
           <div className="rounded-2xl bg-creme p-4 ring-1 ring-nude">
             <div className="grid grid-cols-7 gap-1 text-center text-[11.5px] font-medium text-tinta-soft">
-              {WEEKDAY_SHORT.slice(1).concat(WEEKDAY_SHORT[0]).map((d) => <span key={d}>{d}</span>)}
+              {WEEKDAY_SHORT_MON.map((d) => <span key={d}>{d}</span>)}
             </div>
             <MonthGrid
               anchorYear={rangeStartDay.year}

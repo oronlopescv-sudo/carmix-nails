@@ -3,6 +3,7 @@ import type { FieldErrors } from "@/lib/validators";
 export type ActionErr = {
   ok: false;
   error: string;
+  code?: string;
   fieldErrors?: FieldErrors;
   retryAfterSeconds?: number;
 };

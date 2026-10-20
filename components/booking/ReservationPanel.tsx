@@ -181,6 +181,8 @@ function Panel({ ...props }: {
 
   // remarcação
   const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+  const [daysNote, setDaysNote] = useState<string | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [slots, setSlots] = useState<SlotDTO[]>([]);
   const [pickedDay, setPickedDay] = useState<string | null>(null);
   const todayISO = todayISOInTz(timezone); // data de parede do estúdio, não UTC
@@ -190,9 +192,16 @@ function Panel({ ...props }: {
   useEffect(() => {
     if (!allowReschedule) return;
     let alive = true;
-    getOpenDaysAction(serviceId, professionalId).then((r) => {
-      if (alive) setOpenDays(new Set(r.days));
-    });
+    getOpenDaysAction(serviceId, professionalId)
+      .then((r) => {
+        if (alive) {
+          if (r.ok) setOpenDays(new Set(r.days));
+          else setDaysNote(r.error);
+        }
+      })
+      .catch(() => {
+        if (alive) setDaysNote("Não foi possível carregar os dias para remarcar. Tente de novo mais tarde.");
+      });
     return () => {
       alive = false;
     };
@@ -201,9 +210,19 @@ function Panel({ ...props }: {
   useEffect(() => {
     if (!pickedDay) return;
     let alive = true;
-    getSlotsAction(serviceId, professionalId, pickedDay).then((r) => {
-      if (alive) setSlots(r);
-    });
+    setSlotsLoading(true);
+    getSlotsAction(serviceId, professionalId, pickedDay)
+      .then((r) => {
+        if (!alive) return;
+        if (r.ok) setSlots(r.slots);
+        else setDaysNote(r.error);
+      })
+      .catch(() => {
+        if (alive) setDaysNote("Não foi possível carregar as horas para remarcar. Tente de novo mais tarde.");
+      })
+      .finally(() => {
+        if (alive) setSlotsLoading(false);
+      });
     return () => {
       alive = false;
     };
@@ -336,11 +355,18 @@ function Panel({ ...props }: {
               {openDays.size === 0 && (
                 <p className="mt-2 text-[13px] text-tinta-soft">Sem dias alternativos disponíveis nos próximos meses.</p>
               )}
+              {daysNote && (
+                <p role="alert" className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700 ring-1 ring-rose-200">
+                  {daysNote}
+                </p>
+              )}
               {pickedDay && (
                 <div className="mt-4">
                   <p className="label">Nova hora</p>
-                  {slots.length === 0 ? (
-                    <p className="text-[13px] text-tinta-soft">A carregar ou sem horas livres nesse dia — escolha outro.</p>
+                  {slotsLoading ? (
+                    <p className="text-[13px] text-tinta-soft">A carregar horas livres…</p>
+                  ) : slots.length === 0 ? (
+                    <p className="text-[13px] text-tinta-soft">Sem horas livres nesse dia — escolha outro.</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {slots.map((sl) => (

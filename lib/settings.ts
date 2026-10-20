@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import type { BusinessSettings } from "@prisma/client";
 import { isValidTimezone } from "@/lib/tz";
@@ -46,7 +47,9 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   updatedAt: new Date(),
 };
 
-export async function getSettings(): Promise<BusinessSettings> {
+// cache() do React: dentro do mesmo pedido, páginas/acções que consultem as
+// configurações mais que uma vez não batem de novo na BD
+export const getSettings = cache(async (): Promise<BusinessSettings> => {
   try {
     let row = await db.businessSettings.findUnique({ where: { id: 1 } });
     if (!row) {
@@ -71,7 +74,7 @@ export async function getSettings(): Promise<BusinessSettings> {
     console.error("[carmix] getSettings sem base de dados — a servir predefinições:", e);
     return DEFAULT_SETTINGS;
   }
-}
+});
 
 export function mailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim().length >= 20);

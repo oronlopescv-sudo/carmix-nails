@@ -94,22 +94,24 @@ export function computeSlotMinutes(args: {
   const out = new Set<number>();
   for (const [ws, we] of free) {
     for (let t = ws; t + dur <= we; t += slotInterval) {
-      const candStart = t;
-      const candEnd = t + dur + gap; // o intervalo pós-tratamento também bloqueia
-      let conflict = false;
-      for (const b of busy) {
-        if (!(candEnd <= b.start || candStart >= b.end)) {
-          conflict = true;
-          break;
-        }
-      }
-      if (conflict) continue;
       let startUtcMs: number;
       try {
         startUtcMs = wallToUtc(day, Math.floor(t / 60), t % 60, tz).getTime();
       } catch {
         continue;
       }
+      // conflito em UNIDADES IGUAIS (epoch UTC ms): t é minuto local de parede e
+      // busy é epoch ms — antes o compare misturava escalas e nunca casava
+      const candStartUtc = startUtcMs;
+      const candEndUtc = startUtcMs + (dur + gap) * 60_000; // o intervalo pós-tratamento também bloqueia
+      let conflict = false;
+      for (const b of busy) {
+        if (!(candEndUtc <= b.start || candStartUtc >= b.end)) {
+          conflict = true;
+          break;
+        }
+      }
+      if (conflict) continue;
       if (startUtcMs < minStart || startUtcMs > maxStart) continue;
       out.add(t);
     }

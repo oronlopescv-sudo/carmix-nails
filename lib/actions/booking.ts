@@ -62,7 +62,10 @@ export async function createBookingAction(input: {
       emailSent: result.emails.sent,
     };
   } catch (err) {
-    if (err instanceof BookingError) return { ok: false, error: err.message };
+    // código do erro vai na resposta — o cliente usa-o para recuperar (ex.:
+    // SLOT_UNAVAILABLE → voltar ao ecrã da hora em vez de erro genérico preso)
+    if (err instanceof BookingError) return { ok: false, error: err.message, code: err.code };
+    console.error("[carmix] createBookingAction:", err);
     return { ok: false, error: "Houve um problema. Tente novamente." };
   }
 }
@@ -141,22 +144,32 @@ async function loadServicePro(serviceId: string, professionalId: string) {
 }
 
 // Horários livres num dia concreto, para o seletor de data/hora
+// A resposta é estruturada: ok:false → erro real (BD em baixo, rate limit),
+// ok:true com slots vazio → dia realmente sem horas livres.
 export async function getSlotsAction(
   serviceId: string,
   professionalId: string,
   dateISO: string,
-): Promise<SlotDTO[]> {
+): Promise<{ ok: true; slots: SlotDTO[] } | { ok: false; error: string }> {
   const h = await headers();
   const rl = rateLimit(`avail:${clientIp(h)}`, RATE_LIMITS.availability.limit, RATE_LIMITS.availability.windowMs);
-  if (!rl.ok) return [];
+  if (!rl.ok)
+    return {
+      ok: false,
+      error: "Demasiados pedidos de disponibilidade de uma vez. Tente novamente dentro de um minuto.",
+    };
   try {
     const service = await loadServicePro(serviceId, professionalId);
     const day = parseDayISO(dateISO);
-    if (!day || dayISO(day) !== dateISO) return [];
+    if (!day || dayISO(day) !== dateISO) return { ok: true, slots: [] };
     const settings = await getSettings();
-    return await getDaySlots(db, professionalId, service, day, settings);
-  } catch {
-    return [];
+    return { ok: true, slots: await getDaySlots(db, professionalId, service, day, settings) };
+  } catch (e) {
+    console.error("[carmix] getSlotsAction:", e);
+    return {
+      ok: false,
+      error: "De momento não conseguimos ver as horas livres. Tente novamente daqui a pouco.",
+    };
   }
 }
 
@@ -164,20 +177,28 @@ export async function getSlotsAction(
 export async function getOpenDaysAction(
   serviceId: string,
   professionalId: string,
-): Promise<{ days: string[]; maxDay: string }> {
-  const settings = await getSettings();
-  const today = wallNow(settings.timezone);
-  const fromDay = addDaysParts(today, 0);
-  const toDay = addDaysParts(today, settings.maxLeadDays);
+): Promise<{ ok: true; days: string[]; maxDay: string } | { ok: false; error: string }> {
   const h = await headers();
   const rl = rateLimit(`avail:${clientIp(h)}`, RATE_LIMITS.availability.limit, RATE_LIMITS.availability.windowMs);
-  if (!rl.ok) return { days: [], maxDay: dayISO(toDay) };
+  if (!rl.ok)
+    return {
+      ok: false,
+      error: "Demasiados pedidos de disponibilidade de uma vez. Tente novamente dentro de um minuto.",
+    };
   try {
+    const settings = await getSettings();
+    const today = wallNow(settings.timezone);
+    const fromDay = addDaysParts(today, 0);
+    const toDay = addDaysParts(today, settings.maxLeadDays);
     const service = await loadServicePro(serviceId, professionalId);
     const days = await getDaysWithSlots(professionalId, service, fromDay, toDay, settings);
-    return { days, maxDay: dayISO(toDay) };
-  } catch {
-    return { days: [], maxDay: dayISO(toDay) };
+    return { ok: true, days, maxDay: dayISO(toDay) };
+  } catch (e) {
+    console.error("[carmix] getOpenDaysAction:", e);
+    return {
+      ok: false,
+      error: "De momento não conseguimos verificar a disponibilidade. Tente novamente daqui a pouco.",
+    };
   }
 }
 

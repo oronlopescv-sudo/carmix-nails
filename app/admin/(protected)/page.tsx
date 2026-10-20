@@ -13,7 +13,7 @@ import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { wallNow, wallToUtc, dayISO, addDaysParts, minutesToHM, utcToWall } from "@/lib/tz";
 import { formatPrice } from "@/lib/pricing";
-import { STATUS_LABELS, STATUS_COLORS, WEEKDAY_SHORT } from "@/lib/constants";
+import { STATUS_LABELS, STATUS_COLORS, WEEKDAY_SHORT_MON } from "@/lib/constants";
 import { BookingsBar } from "@/components/admin/Charts";
 
 function Stat({ label, value, sub, icon: Icon }: { label: string; value: string; sub?: string; icon: React.ElementType }) {
@@ -193,7 +193,7 @@ export default async function DashboardPage() {
                 return (
                   <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-[14px]">
                     <span className="w-24 shrink-0 tabular-nums text-tinta-soft">
-                      {WEEKDAY_SHORT[(local.getUTCDay() + 6) % 7]} {String(w.day).padStart(2, "0")}/{String(w.month).padStart(2, "0")} · {String(w.hour).padStart(2, "0")}:{String(w.minute).padStart(2, "0")}
+                      {WEEKDAY_SHORT_MON[(local.getUTCDay() + 6) % 7]} {String(w.day).padStart(2, "0")}/{String(w.month).padStart(2, "0")} · {String(w.hour).padStart(2, "0")}:{String(w.minute).padStart(2, "0")}
                     </span>
                     <span className="font-medium text-tinta">{a.customer.name}</span>
                     <span className="text-tinta-soft">{a.service.name}</span>

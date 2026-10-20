@@ -44,13 +44,19 @@ export default async function AgendarPage() {
     );
   }
 
-  const [services, pros] = await Promise.all([getBookableServices(), getActiveProfessionals()]);
-  let links: Array<{ professionalId: string; serviceId: string }> = [];
-  try {
-    links = await db.professionalService.findMany({ select: { professionalId: true, serviceId: true } });
-  } catch (e) {
-    console.error("[carmix] ligações profissional–serviço:", e);
-  }
+  // tudo em paralelo num único percurso à BD (o findMany separado atrasava a
+  // hidratação do fluxo — cada ida e volta conta nos botões a funcionar cedo)
+  const linksPromise = db.professionalService
+    .findMany({ select: { professionalId: true, serviceId: true } })
+    .catch((e) => {
+      console.error("[carmix] ligações profissional–serviço:", e);
+      return [] as Array<{ professionalId: string; serviceId: string }>;
+    });
+  const [services, pros, links] = await Promise.all([
+    getBookableServices(),
+    getActiveProfessionals(),
+    linksPromise,
+  ]);
 
   const servicesByPro = new Map<string, string[]>();
   for (const l of links) {

@@ -19,6 +19,10 @@ const fail = (m: string) => {
   process.exitCode = 1;
 };
 
+// rastreio para a limpeza correr MESMO quando um passo aborta no meio
+// (uma corrida que rebentou deixou uma marcação órfã a bloquear um dia real)
+const E2E_KEEP = { ref: null as string | null, usr: null as { id: string } | null };
+
 async function main() {
   const s = await getSettings();
 
@@ -58,6 +62,7 @@ async function main() {
 
   if (!created) process.exit(1);
   const ref = created.appointment.reference;
+  E2E_KEEP.ref = ref;
 
   /* 2. conflito: mesma hora deve falhar */
   let conflicted = false;
@@ -94,6 +99,7 @@ async function main() {
   // usa a primeira conta admin real (o dono cria a sua própria via npm run create-admin)
   const usr = await db.user.findFirst({ where: { role: "ADMIN", isActive: true } });
   if (!usr) throw new Error("sem conta admin — corre primeiro: npm run create-admin");
+  E2E_KEEP.usr = usr;
   await db.session.create({
     data: { tokenHash: sha256hex(token), userId: usr.id, expiresAt: new Date(Date.now() + 3_600_000), ip: "127.0.0.1", userAgent: "e2e" },
   });
@@ -124,19 +130,28 @@ async function main() {
   console.log(refOk ? "✓ /reserva/[ref] mostra a marcação" : "✗ /reserva/[ref] falhou " + publicRef.status);
   if (!refOk) process.exitCode = 1;
 
-  /* 5. limpeza: sessão, marcação e cliente de teste */
-  await db.session.deleteMany({ where: { userId: usr.id, ip: "127.0.0.1" } });
-  const appt = await db.appointment.findUnique({ where: { reference: ref } });
-  if (appt) {
-    await db.appointment.delete({ where: { id: appt.id } });
-  }
-  await db.customer.deleteMany({ where: { phone: "+238 900 000 000" } });
-  await db.customer.deleteMany({ where: { phone: "+238 900 000 001" } });
-  console.log("✓ limpeza do e2e concluída");
-  process.exit(process.exitCode ?? 0);
+  /* 5. limpeza: sessão, marcação e cliente de teste — corre no finally acima,
+     mesmo quando um passo anterior rebenta */
 }
 
-void main().then(() => process.exit(process.exitCode ?? 0)).catch((e) => {
-  console.error("ERRO:", e);
-  process.exit(1);
-});
+  void main()
+    .catch((e) => {
+      console.error("ERRO:", e);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      try {
+        if (E2E_KEEP.usr) await db.session.deleteMany({ where: { userId: E2E_KEEP.usr.id, ip: "127.0.0.1" } });
+        if (E2E_KEEP.ref) {
+          const appt = await db.appointment.findUnique({ where: { reference: E2E_KEEP.ref } });
+          if (appt) await db.appointment.delete({ where: { id: appt.id } });
+        }
+        await db.customer.deleteMany({ where: { phone: { in: ["+238 900 000 000", "+238 900 000 001"] } } });
+      } catch (e) {
+        console.error("(limpeza parcial do e2e falhou:)", e);
+      } finally {
+        console.log("✓ limpeza do e2e concluída (mesmo com erro)");
+        await db.$disconnect();
+        process.exit(process.exitCode ?? 0);
+      }
+    });
