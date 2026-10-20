@@ -355,7 +355,9 @@ export default function ProfissionaisManager({
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => void run(() => deleteBlockedPeriodAction(b.id))}
+                          onClick={() => {
+                            if (window.confirm("Remover este bloqueio?")) void run(() => deleteBlockedPeriodAction(b.id));
+                          }}
                           aria-label="Remover bloqueio"
                           className="ml-auto grid h-7 w-7 place-items-center rounded-full text-tinta-soft transition hover:bg-rose-50 hover:text-rose-600"
                         >

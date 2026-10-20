@@ -147,7 +147,9 @@ export default function StudioHorarios({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void run(() => deleteBlockedPeriodAction(b.id))}
+                onClick={() => {
+                  if (window.confirm("Remover este encerramento?")) void run(() => deleteBlockedPeriodAction(b.id));
+                }}
                 aria-label="Remover"
                 className="ml-auto grid h-7 w-7 place-items-center rounded-full text-tinta-soft transition hover:bg-rose-50 hover:text-rose-600"
               >

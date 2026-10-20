@@ -73,12 +73,13 @@ export async function moveGalleryImageAction(id: string, direction: "up" | "down
   if (index === -1) return { ok: false, error: "Imagem inexistente." };
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (swapWith < 0 || swapWith >= images.length) return { ok: true };
-  const a = images[index];
-  const b = images[swapWith];
-  await db.$transaction([
-    db.galleryImage.update({ where: { id: a.id }, data: { sortOrder: b.sortOrder } }),
-    db.galleryImage.update({ where: { id: b.id }, data: { sortOrder: a.sortOrder } }),
-  ]);
+  // normaliza as posições (0..n-1) antes de trocar: posições repetidas
+  // faziam a troca não ter efeito visível
+  const reordered = [...images];
+  [reordered[index], reordered[swapWith]] = [reordered[swapWith], reordered[index]];
+  await db.$transaction(
+    reordered.map((img, pos) => db.galleryImage.update({ where: { id: img.id }, data: { sortOrder: pos } })),
+  );
   await logAudit({ userId: user.id, action: "gallery.move", entity: "galleryImage", entityId: id, meta: { direction } });
   return { ok: true };
 }

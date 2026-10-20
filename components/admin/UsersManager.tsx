@@ -123,7 +123,12 @@ export default function UsersManager({ users, currentUserId }: { users: Array<Us
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void run(() => toggleUserActiveAction(u.id, !u.isActive))}
+                onClick={() => {
+                  const msg = u.isActive
+                    ? `Desativar “${u.name}”? Perde o acesso imediatamente.`
+                    : `Reativar “${u.name}”?`;
+                  if (window.confirm(msg)) void run(() => toggleUserActiveAction(u.id, !u.isActive));
+                }}
                 title={u.isActive ? "Desativar (termina as sessões)" : "Ativar"}
                 className="rounded-full px-3 py-1.5 text-[12.5px] text-malva ring-1 ring-nude transition hover:ring-malva-soft disabled:opacity-50"
               >

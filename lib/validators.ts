@@ -109,7 +109,10 @@ export const serviceSchema = z.object({
   isFeatured: z.boolean().optional().default(false),
   imageUrl: z.string().trim().max(300).optional().or(z.literal("")).transform((v) => (v ? v : null)),
   sortOrder: z.coerce.number().int().min(0).max(9999).optional().default(0),
-});
+}).refine(
+  (v) => v.priceMax == null || v.priceMax >= v.priceMin,
+  { message: "O preço máximo não pode ser inferior ao mínimo", path: ["priceMax"] },
+);
 export type ServiceInput = z.infer<typeof serviceSchema>;
 
 export const professionalSchema = z.object({

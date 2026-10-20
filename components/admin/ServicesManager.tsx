@@ -223,7 +223,9 @@ export default function ServicesManager({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => run(() => deleteCategoryAction(c.id))}
+                    onClick={() => {
+                      if (window.confirm(`Eliminar a categoria “${c.name}”?`)) void run(() => deleteCategoryAction(c.id));
+                    }}
                     title="Eliminar categoria"
                     className="grid h-8 w-8 place-items-center rounded-full text-tinta-soft transition hover:bg-rose-50 hover:text-rose-600"
                   >
