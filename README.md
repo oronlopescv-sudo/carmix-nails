@@ -69,6 +69,7 @@ Variáveis de ambiente no painel do Hostinger:
 | `NEXT_PUBLIC_SITE_URL` | sim | URL público do site |
 | `ADMIN_USER` + `ADMIN_PASSWORD` | 1.º deploy | cria a primeira conta do painel (palavra-passe mín. 8) |
 | `ADMIN_NAME` | não | nome mostrado no painel |
+| `STUDIO_WHATSAPP` / `STUDIO_PHONE` / `STUDIO_EMAIL` | recomendado | contactos mostrados mesmo sem base de dados (botão "Marcar pelo WhatsApp") |
 
 `npm run build` prepara a base de dados sozinho (`scripts/db-prepare.ts`): aplica as
 migrações, corre o seed se ainda não houver serviços e cria a conta de administração

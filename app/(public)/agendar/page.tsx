@@ -107,6 +107,8 @@ export default async function AgendarPage() {
           currency={s.currency}
           emailConfigured={mailConfigured()}
           timezone={s.timezone}
+          whatsApp={s.whatsApp}
+          brandName={s.brandName}
         />
       </div>
     </div>

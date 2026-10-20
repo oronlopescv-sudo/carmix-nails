@@ -113,12 +113,16 @@ export default function BookingFlow({
   currency,
   emailConfigured,
   timezone,
+  whatsApp,
+  brandName,
 }: {
   groups: Array<{ name: string; services: ServiceOption[] }>;
   professionals: (ProOption & { serviceIds: string[] })[];
   currency: string;
   emailConfigured: boolean;
   timezone: string;
+  whatsApp?: string | null;
+  brandName?: string;
 }) {
   // passo 0=serviço, 1=profissional, 2=data/hora, 3=dados, 4=feito
   const [step, setStep] = useState(0);
@@ -379,7 +383,19 @@ export default function BookingFlow({
             // sem serviços (nenhum ativo, ou base de dados indisponível): nunca ecrã vazio
             <div className="mt-5 rounded-2xl bg-casca px-5 py-5 text-[14.5px] text-tinta-soft ring-1 ring-nude">
               <p>De momento não há serviços disponíveis para marcação online.</p>
-              <p className="mt-2">
+              {whatsApp && (
+                <a
+                  href={`https://wa.me/${whatsApp.replace(/\D/g, "")}?text=${encodeURIComponent(
+                    `Olá${brandName ? ` ${brandName}` : ""}! Gostaria de marcar um serviço. Que dias e horas têm disponíveis?`,
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-[15px] font-medium text-white shadow-sm transition hover:opacity-90"
+                >
+                  Marcar pelo WhatsApp
+                </a>
+              )}
+              <p className="mt-3">
                 Pode{" "}
                 <Link href="/contactos" className="font-medium text-malva underline underline-offset-2">
                   contactar o estúdio

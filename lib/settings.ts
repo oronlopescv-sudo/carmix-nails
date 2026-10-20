@@ -49,7 +49,25 @@ const DEFAULT_SETTINGS: BusinessSettings = {
 
 // cache() do React: dentro do mesmo pedido, páginas/acções que consultem as
 // configurações mais que uma vez não batem de novo na BD
-export const getSettings = cache(async (): Promise<BusinessSettings> => {
+// Contactos de reserva vindos das variáveis de ambiente (Hostinger): usados
+// quando a base de dados não os tem ou está inacessível — assim o site mostra
+// sempre o WhatsApp/telefone para marcar, mesmo com o agendamento online em baixo.
+function withEnvContacts(s: BusinessSettings): BusinessSettings {
+  const env = (k: string) => (process.env[k] ?? "").trim() || null;
+  return {
+    ...s,
+    whatsApp: s.whatsApp || env("STUDIO_WHATSAPP"),
+    phone: s.phone || env("STUDIO_PHONE"),
+    email: s.email || env("STUDIO_EMAIL"),
+    address: s.address || env("STUDIO_ADDRESS"),
+    city: s.city || env("STUDIO_CITY"),
+    instagram: s.instagram || env("STUDIO_INSTAGRAM"),
+  };
+}
+
+export const getSettings = cache(async (): Promise<BusinessSettings> => withEnvContacts(await loadSettings()));
+
+async function loadSettings(): Promise<BusinessSettings> {
   try {
     let row = await db.businessSettings.findUnique({ where: { id: 1 } });
     if (!row) {
@@ -74,7 +92,7 @@ export const getSettings = cache(async (): Promise<BusinessSettings> => {
     console.error("[carmix] getSettings sem base de dados — a servir predefinições:", e);
     return DEFAULT_SETTINGS;
   }
-});
+}
 
 export function mailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim().length >= 20);
