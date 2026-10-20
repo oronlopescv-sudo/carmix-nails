@@ -61,12 +61,26 @@ Com `RESEND_API_KEY` configurada, as clientes recebem confirmação/lembrete/can
 
 ## Produção (Hostinger web app / VPS)
 
+Variáveis de ambiente no painel do Hostinger:
+
+| Variável | Obrigatória | Para quê |
+|---|---|---|
+| `DATABASE_URL` | sim | ligação PostgreSQL (TLS acrescentado automaticamente em servidores remotos) |
+| `NEXT_PUBLIC_SITE_URL` | sim | URL público do site |
+| `ADMIN_USER` + `ADMIN_PASSWORD` | 1.º deploy | cria a primeira conta do painel (palavra-passe mín. 8) |
+| `ADMIN_NAME` | não | nome mostrado no painel |
+
+`npm run build` prepara a base de dados sozinho (`scripts/db-prepare.ts`): aplica as
+migrações, corre o seed se ainda não houver serviços e cria a conta de administração
+se ainda não houver nenhuma. Se algo falhar, o build continua e o registo explica a causa.
+
 ```bash
-npm run setup                 # migrate + seed (uma vez por base de dados nova)
-npm run create-admin          # uma vez — cria o login do painel
-npm run build                 # gera .next/standalone
+npm run build                 # db:prepare + gera .next/standalone
 npm start                     # arranca node .next/standalone/server.js (respeita PORT/HOSTNAME)
 ```
+
+Diagnóstico do site publicado: abrir `/api/health` (estado da base de dados e contagens,
+sem segredos). Acesso ao painel: ícone de cadeado no cabeçalho ou "Área reservada" no rodapé.
 
 O `output: "standalone"` no `next.config.ts` embute o servidor a correr sem `node_modules` completo — igual aos outros projetos da Hostinger. Defina obrigatoriamente `DATABASE_URL` e `NEXT_PUBLIC_SITE_URL` no painel do ambiente; `RESEND_API_KEY` e restantes variáveis de e-mail são opcionais. `UPLOAD_DIR` (opcional) fixa a pasta das fotografias carregadas — se não existir, usa-se `data/uploads` (copiada para o bundle pelo `copy-static`).
 

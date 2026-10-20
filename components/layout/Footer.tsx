@@ -123,6 +123,9 @@ export default function Footer({
           </ul>
           )}
           <p className="label mt-6">Horário</p>
+          {openDays.length === 0 && (
+            <p className="mt-2 text-sm text-tinta-soft">Horário ainda não definido — contacte-nos para marcar.</p>
+          )}
           <ul className="mt-2 space-y-1 text-tinta-soft">
             {openDays.map((d) => {
               const line = scheduleLine(d);
@@ -143,6 +146,10 @@ export default function Footer({
 
       <div className="border-t border-nude/70 py-5 text-center text-xs text-tinta-soft">
         © {new Date().getFullYear()} {brandName}. Todos os direitos reservados.
+        {" · "}
+        <Link href="/admin" className="underline-offset-2 hover:text-malva hover:underline">
+          Área reservada
+        </Link>
       </div>
     </footer>
   );

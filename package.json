@@ -8,7 +8,8 @@
   "description": "Carmix Nails — site público, agendamento online e painel administrativo (Next.js)",
   "scripts": {
     "dev": "next dev",
-    "build": "rm -rf .next && prisma generate && next build && npm run copy-static",
+    "build": "rm -rf .next && prisma generate && npm run db:prepare && next build && npm run copy-static",
+    "db:prepare": "tsx scripts/db-prepare.ts",
     "copy-static": "rm -rf .next/standalone/.next/static .next/standalone/public && cp -r .next/static .next/standalone/.next/static && { [ -d public ] && cp -r public .next/standalone/public || true; } && { [ -d data ] && cp -r data .next/standalone/data || true; }",
     "start": "node .next/standalone/server.js",
     "start:next": "next start",

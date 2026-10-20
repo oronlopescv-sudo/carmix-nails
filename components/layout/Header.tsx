@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Lock, Menu, X } from "lucide-react";
 import { cx } from "@/lib/utils";
 
 const NAV = [
@@ -84,6 +84,14 @@ export default function Header({
               WhatsApp
             </a>
           )}
+          <Link
+            href="/admin"
+            title="Área reservada (admin)"
+            aria-label="Área reservada (admin)"
+            className="grid h-9 w-9 place-items-center rounded-full text-tinta-soft transition hover:bg-casca hover:text-bordo"
+          >
+            <Lock className="h-4 w-4" />
+          </Link>
         </div>
 
         <button
@@ -103,7 +111,7 @@ export default function Header({
         id="menu-movel"
         className={cx(
           "overflow-hidden border-t border-nude bg-creme transition-[max-height] duration-300 lg:hidden",
-          open ? "max-h-[420px]" : "max-h-0",
+          open ? "max-h-[640px]" : "max-h-0",
         )}
       >
         <nav className="flex flex-col gap-1 px-4 py-4" aria-label="Menu móvel">
@@ -136,6 +144,13 @@ export default function Header({
               Ligar: {phone}
             </a>
           )}
+          <Link
+            href="/admin"
+            onClick={() => setOpen(false)}
+            className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] text-tinta-soft hover:bg-casca"
+          >
+            <Lock className="h-4 w-4" /> Área reservada (admin)
+          </Link>
         </nav>
       </div>
     </header>
