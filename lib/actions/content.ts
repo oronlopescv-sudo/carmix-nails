@@ -199,7 +199,7 @@ export async function changeUserPasswordAction(
 ): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { ok: false, error: "Sessão expirada. Entre novamente." };
-  if (newPassword.length < 5) return { ok: false, error: "Pelo menos 5 caracteres." };
+  if (newPassword.length < 8) return { ok: false, error: "Pelo menos 8 caracteres." };
   if (id === user.id) {
     // na própria conta, a passe atual é sempre exigida (evita tomar conta alheia)
     if (!currentPassword) return { ok: false, error: "Indique a palavra-passe atual." };

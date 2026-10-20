@@ -126,6 +126,7 @@ export async function adminSlotsAction(
   serviceId: string,
   professionalId: string,
   dateISO: string,
+  excludeApptId?: string,
 ): Promise<Array<{ minutes: number; time: string; iso: string }>> {
   const user = await auth();
   if (!user) return [];
@@ -138,7 +139,11 @@ export async function adminSlotsAction(
   const day = parseDayISO(dateISO);
   if (!service || !pro || !day) return [];
   const settings = await getSettings();
-  return getDaySlots(db, professionalId, service, day, settings, { ignoreLeadTime: true });
+  // a própria marcação (ao remarcar) não pode bloquear as suas opções
+  return getDaySlots(db, professionalId, service, day, settings, {
+    ignoreLeadTime: true,
+    excludeApptId,
+  });
 }
 
 // Histórico de eventos de uma marcação (histórico no painel)

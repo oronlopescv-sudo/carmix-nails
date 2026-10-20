@@ -273,7 +273,7 @@ export const userCreateSchema = z.object({
   name: z.string().trim().min(2, "Nome demasiado curto").max(80),
   email: emailField,
   // 5+: o dono escolheu "12345"; recomendamos 10+ no dia a dia
-  password: z.string().min(5, "Pelo menos 5 caracteres").max(100),
+  password: z.string().min(8, "Pelo menos 8 caracteres").max(100),
 });
 
 export const categorySchema = z.object({

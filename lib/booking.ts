@@ -503,6 +503,9 @@ export async function rescheduleAppointmentAsAdmin(
   const startTime = wallToUtc(day, Math.floor(minutes / 60), minutes % 60, settings.timezone);
   const endTime = new Date(startTime.getTime() + service.durationMin * 60_000);
   const oldStart = current.startAt;
+  if (startTime.getTime() < Date.now()) {
+    return { ok: false, reason: "Não é possível remarcar para um horário que já passou." };
+  }
 
   try {
     const updated = await db.$transaction(async (tx) => {

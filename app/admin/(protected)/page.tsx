@@ -59,7 +59,8 @@ export default async function DashboardPage() {
     db.customer.count(),
     db.appointment.groupBy({
       by: ["serviceId"],
-      where: { startAt: { gte: start90 } },
+      // só marcações realizadas ou ativas: cancelamentos e faltas não contam como "popular"
+      where: { startAt: { gte: start90 }, status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] } },
       _count: { _all: true },
     }).then((rows) =>
       Promise.all(
@@ -230,7 +231,9 @@ export default async function DashboardPage() {
           <ul className="mt-4 divide-y divide-nude">
             {todayAppts.map((a) => {
               const w = utcToWall(a.startAt, s.timezone);
-              const endTime = minutesToHM(Math.min(1439, w.hour * 60 + w.minute + 90));
+              // fim real da marcação (duração do serviço), não um valor fixo
+              const we = utcToWall(a.endAt, s.timezone);
+              const endTime = minutesToHM(we.hour * 60 + we.minute);
               return (
                 <li key={a.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-[14px]">
                   <span className="w-28 shrink-0 tabular-nums font-medium text-tinta">

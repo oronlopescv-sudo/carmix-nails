@@ -146,8 +146,8 @@ export default function UsersManager({ users, currentUserId }: { users: Array<Us
           }}
           onSubmit={(pw, currPw) =>
             run(async () => {
-              if (pw.length < 5) {
-                setNewPwError("Pelo menos 5 caracteres.");
+              if (pw.length < 8) {
+                setNewPwError("Pelo menos 8 caracteres.");
                 return { ok: false };
               }
               const res = await changeUserPasswordAction(

@@ -8,6 +8,7 @@ import { Loader2, History, CalendarClock, XCircle, CheckCircle2, MessageCircle }
 import { cx } from "@/lib/utils";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/constants";
 import { formatPrice } from "@/lib/pricing";
+import { todayISOInTz } from "@/lib/tz";
 import {
   adminConfirmAppointmentAction,
   adminCancelAppointmentAction,
@@ -28,17 +29,23 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<null | "reschedule" | "history" | "cancel">(null);
   const [slots, setSlots] = useState<Slot[]>([]);
-  const [dayISO, setDayISO] = useState<string>(() => appt.startAtISO.slice(0, 10));
-  const [slot, setSlot] = useState<Slot | null>(null);
-  const [history, setHistory] = useState<Array<{ type: string; actor: string; description: string | null; createdAtISO: string }> | null>(null);
-
   const startWall = isoOf(appt.startAtISO, timezone);
   const endWall = isoOf(appt.endAtISO, timezone);
   const startMinute = startWall.hour * 60 + startWall.minute;
   const endMinute = endWall.hour * 60 + endWall.minute;
+  // data de PARede do estúdio (não a UTC: marcações tardias no fuso UTC−1 mudavam de dia)
+  const wallDayISO = `${startWall.year}-${String(startWall.month).padStart(2, "0")}-${String(startWall.day).padStart(2, "0")}`;
 
-  const active = appt.status === "PENDING";
-  const upcoming = new Date(appt.startAtISO).getTime() > Date.now() && appt.status !== "CANCELLED";
+  const [dayISO, setDayISO] = useState<string>(wallDayISO);
+  const [slot, setSlot] = useState<Slot | null>(null);
+  const [history, setHistory] = useState<Array<{ type: string; actor: string; description: string | null; createdAtISO: string }> | null>(null);
+
+  // confirmar só se pendente; cancelar/remarcar enquanto estiver ativa (pendente ou confirmada)
+  const pending = appt.status === "PENDING";
+  const open = pending || appt.status === "CONFIRMED";
+  // concluir/falta só faz sentido depois de a marcação ter começado
+  const started = new Date(appt.startAtISO).getTime() <= Date.now();
+  const todayWall = todayISOInTz(timezone);
 
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>): Promise<boolean> {
     setBusy(true);
@@ -70,9 +77,15 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
     setSlot(null);
     setSlots([]);
     setBusy(true);
-    const r = await adminSlotsAction(appt.serviceId, appt.professionalId, iso);
-    setBusy(false);
-    setSlots(r);
+    try {
+      // exclui a própria marcação: o seu horário atual continua a ser uma opção
+      const r = await adminSlotsAction(appt.serviceId, appt.professionalId, iso, appt.id);
+      setSlots(r);
+    } catch {
+      setError("Não foi possível carregar as horas deste dia.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -101,7 +114,7 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {active && (
+          {pending && (
             <button
               type="button"
               disabled={busy}
@@ -122,17 +135,24 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
           )}
-          {active && (
+          {open && (
             <button
               type="button"
               disabled={busy}
-              onClick={() => setMode(mode === "reschedule" ? null : "reschedule")}
+              onClick={() => {
+                if (mode === "reschedule") {
+                  setMode(null);
+                  return;
+                }
+                setMode("reschedule");
+                void pickDay(wallDayISO);
+              }}
               className="inline-flex items-center gap-1.5 rounded-full border border-malva-soft px-4 py-2 text-[13.5px] font-medium text-malva transition hover:border-malva"
             >
               <CalendarClock className="h-4 w-4" /> Remarcar
             </button>
           )}
-          {active && (
+          {open && (
             <button
               type="button"
               disabled={busy}
@@ -142,7 +162,7 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
               <XCircle className="h-4 w-4" /> Cancelar
             </button>
           )}
-          {upcoming && ["CONFIRMED", "PENDING"].includes(appt.status) && (
+          {started && open && (
             <>
               <button
                 type="button"
@@ -212,9 +232,10 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
               <button
                 key={d.iso}
                 type="button"
+                disabled={d.iso < todayWall || busy}
                 onClick={() => pickDay(d.iso)}
                 className={cx(
-                  "w-14 shrink-0 rounded-xl bg-creme px-2 py-2.5 text-center ring-1 transition",
+                  "w-14 shrink-0 rounded-xl bg-creme px-2 py-2.5 text-center ring-1 transition disabled:opacity-35",
                   dayISO === d.iso ? "bg-bordo text-creme ring-bordo" : "ring-nude hover:ring-malva-soft",
                 )}
               >
@@ -226,7 +247,7 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
           <p className="label mt-4">Nova hora</p>
           {slots.length === 0 ? (
             <p className="text-[13px] text-tinta-soft">
-              {dayISO ? "A carregar ou sem horas livres nesse dia (incluindo a própria marcação)." : "Escolha um dia."}
+              {dayISO ? "Sem horas livres neste dia (a própria marcação conta como livre)." : "Escolha um dia."}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -265,7 +286,7 @@ export function AppointmentActions({ appt, timezone, currency, brandName }: { ap
             </button>
             <button type="button" onClick={() => setMode(null)} className="text-[13.5px] text-tinta-soft hover:text-tinta">Fechar</button>
           </div>
-          <p className="mt-2 text-[12px] text-tinta-soft">A hora da própria marcação não aparece nas opções livres.</p>
+          <p className="mt-2 text-[12px] text-tinta-soft">Não é possível escolher dias ou horas que já passaram.</p>
         </div>
       )}
 

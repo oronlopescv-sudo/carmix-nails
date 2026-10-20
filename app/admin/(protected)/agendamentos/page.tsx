@@ -40,13 +40,24 @@ export default async function AgendamentosPage({ searchParams }: Params) {
   const gte = wallToUtc(rangeStartDay, 0, 0, s.timezone);
   const lt = wallToUtc(addDaysParts(rangeEndDay, 1), 0, 0, s.timezone);
 
-  const where: Record<string, unknown> = { startAt: { gte, lt } };
+  // com pesquisa ativa, procura em todas as datas (ex.: "Ver marcações" de uma cliente)
+  const where: Record<string, unknown> = q ? {} : { startAt: { gte, lt } };
   if (statusFilter) where.status = statusFilter;
+  if (q) {
+    where.customer = {
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q } },
+        { email: { contains: q, mode: "insensitive" } },
+      ],
+    };
+  }
   const allForCounts = true;
 
   const appointments = await db.appointment.findMany({
     where,
-    orderBy: [{ startAt: "asc" }],
+    take: q ? 300 : undefined,
+    orderBy: [{ startAt: q ? "desc" : "asc" }],
     include: {
       service: { select: { name: true, durationMin: true } },
       professional: { select: { name: true } },
@@ -123,9 +134,9 @@ export default async function AgendamentosPage({ searchParams }: Params) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={baseLink({ date: shiftISO(dayISO(anchor), view === "week" ? -7 : view === "day" ? -1 : -31) })} className="rounded-xl bg-creme px-3.5 py-2 text-[13.5px] ring-1 ring-nude transition hover:ring-malva-soft">← Anterior</Link>
+          <Link href={baseLink({ date: stepAnchor(dayISO(anchor), view, -1) })} className="rounded-xl bg-creme px-3.5 py-2 text-[13.5px] ring-1 ring-nude transition hover:ring-malva-soft">← Anterior</Link>
           <Link href={baseLink({ date: dayISO(today) })} className="rounded-xl bg-creme px-3.5 py-2 text-[13.5px] ring-1 ring-nude transition hover:ring-malva-soft">Hoje</Link>
-          <Link href={baseLink({ date: shiftISO(dayISO(anchor), view === "week" ? 7 : view === "day" ? 1 : 31) })} className="rounded-xl bg-creme px-3.5 py-2 text-[13.5px] ring-1 ring-nude transition hover:ring-malva-soft">Seguinte →</Link>
+          <Link href={baseLink({ date: stepAnchor(dayISO(anchor), view, 1) })} className="rounded-xl bg-creme px-3.5 py-2 text-[13.5px] ring-1 ring-nude transition hover:ring-malva-soft">Seguinte →</Link>
         </div>
       </div>
 
@@ -282,7 +293,14 @@ function dayLabel(a: { year: number; month: number; day: number }, b: { year: nu
   return f(a) === f(b) ? f(a) : `${f(a)} – ${f(b)}`;
 }
 
-function shiftISO(iso: string, days: number): string {
+/** Desloca a data de referência conforme a vista: dia ±1, semana ±7, mês ±1 (dia 1). */
+function stepAnchor(iso: string, view: string, dir: -1 | 1): string {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+  if (view === "month") {
+    const dt = new Date(Date.UTC(y, m - 1 + dir, 1));
+    return dayISO({ year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: 1 });
+  }
+  const days = view === "week" ? 7 * dir : dir;
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return dayISO({ year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: dt.getUTCDate() });
 }

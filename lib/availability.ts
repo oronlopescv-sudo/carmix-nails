@@ -84,8 +84,9 @@ export function computeSlotMinutes(args: {
   const free = subtractRanges(windows, pauses);
   const dur = service.durationMin;
   const gap = service.gapAfterMinutes;
+  // o admin ignora a antecedência mínima, mas nunca marca no passado
   const minStart = args.ignoreLeadTime
-    ? -Infinity
+    ? now.getTime()
     : now.getTime() + args.minLeadMinutes * 60_000;
   // a marcação manual do admin ignora também o horizonte máximo
   const maxStart = args.ignoreLeadTime

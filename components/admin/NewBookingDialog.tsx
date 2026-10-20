@@ -70,12 +70,19 @@ export default function NewBookingDialog({
     }
     let alive = true;
     setLoadingSlots(true);
-    adminSlotsAction(svcId, effProId, dayISO).then((r) => {
-      if (alive) {
-        setSlots(r);
-        setLoadingSlots(false);
-      }
-    });
+    adminSlotsAction(svcId, effProId, dayISO)
+      .then((r) => {
+        if (alive) setSlots(r);
+      })
+      .catch(() => {
+        if (alive) {
+          setSlots([]);
+          setError("Não foi possível carregar as horas deste dia.");
+        }
+      })
+      .finally(() => {
+        if (alive) setLoadingSlots(false);
+      });
     return () => {
       alive = false;
     };
@@ -114,7 +121,7 @@ export default function NewBookingDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label" htmlFor="nb-service">Serviço *</label>
-                  <select id="nb-service" className="field" value={svcId} onChange={(e) => { setSvcId(e.target.value); setSlot(null); }}>
+                  <select id="nb-service" className="field" value={svcId} onChange={(e) => { setSvcId(e.target.value); setProId(""); setSlot(null); }}>
                     <option value="">— escolha —</option>
                     {services.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -125,7 +132,9 @@ export default function NewBookingDialog({
                   <label className="label" htmlFor="nb-pro">Profissional</label>
                   <select id="nb-pro" className="field" value={proId} onChange={(e) => { setProId(e.target.value); setSlot(null); }}>
                     <option value="">— primeiro disponível —</option>
-                    {professionals.map((p) => (
+                    {professionals
+                      .filter((p) => !svcId || p.serviceIds.includes(svcId))
+                      .map((p) => (
                       <option key={p.id} value={p.id}>{p.name}{p.isActive ? "" : " (inativo)"}</option>
                     ))}
                   </select>
