@@ -96,6 +96,17 @@ export function ReservationPanel({
       timeLabel={`${String(wall.hour).padStart(2, "0")}:${String(wall.minute).padStart(2, "0")}`}
       allowReschedule={allowReschedule}
       minCancelHours={minCancelHours}
+      // o détails vive em useState do cliente — o router.refresh() sozinho não
+      // o repõe; após cancelar/remarcar refrescamos a partir do servidor
+      onDetailsChanged={async () => {
+        if (!email) return;
+        try {
+          const meta = await reservationMetadataAction(reference, email);
+          if (meta.ok) setDetails(meta);
+        } catch {
+          // silencioso: a mensagem de sucesso já foi mostrada
+        }
+      }}
     />
   );
 }
@@ -170,8 +181,9 @@ function Panel({ ...props }: {
   timeLabel: string;
   allowReschedule: boolean;
   minCancelHours: number;
+  onDetailsChanged?: () => Promise<void>;
 }) {
-  const { reference, email, serviceId, professionalId, timezone, allowReschedule, minCancelHours, ...details } = props;
+  const { reference, email, serviceId, professionalId, timezone, allowReschedule, minCancelHours, onDetailsChanged, ...details } = props;
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(null);
   const [busy, setBusy] = useState(false);
@@ -238,6 +250,9 @@ function Panel({ ...props }: {
       return;
     }
     setMode(null);
+    // refrescar detalhes: o estado do cliente mostrava botões Remarcar/Cancelar
+    // mesmo depois de cancelada (auditoria ronda 3)
+    await onDetailsChanged?.();
     setOkMsg("A sua reserva foi cancelada. Esperamos vê-lo noutra marcação.");
     router.refresh(); // novo estado do servidor (status CANCELLED)
   }
@@ -260,6 +275,9 @@ function Panel({ ...props }: {
       return;
     }
     setMode(null);
+    // os detalhes do cliente (useState) estavam presos ao estado antigo —
+    // o cartão mostrava 14:00 depois de remarcada 16:00 (auditoria ronda 3)
+    await onDetailsChanged?.();
     setNewSlot(null);
     setOkMsg("Marcação remarcada para a nova hora — enviámos-lhe a confirmação.");
     setTimeout(() => router.refresh(), 800);

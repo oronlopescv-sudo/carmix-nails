@@ -18,6 +18,7 @@ import type { Prisma, BusinessSettings, Service } from "@prisma/client";
 import {
   type DayParts,
   wallToUtc,
+  utcToWall,
   addDaysParts,
   dayISO,
   minutesToHM,
@@ -321,7 +322,11 @@ export async function getDaysWithSlots(
 
   const days: string[] = [];
   const now = opts.now ?? new Date();
-  const nowDay = toDay(now);
+  // "hoje" é a data de PAREDE do estúdio (fuso), não a UTC — no fuso UTC−1,
+  // entre 23:00 e 24:00 o instante UTC já pertence ao dia seguinte e o
+  // toDay(now) saltava o próprio dia de hoje do calendário (auditoria ronda 3)
+  const nowWall = utcToWall(now, tz);
+  const nowDay: DayParts = { year: nowWall.year, month: nowWall.month, day: nowWall.day };
 
   for (let d = fromDay; compareDay(d, untilDay) <= 0; d = addDaysParts(d, 1)) {
     if (compareDay(d, nowDay) < 0) continue;

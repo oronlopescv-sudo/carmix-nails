@@ -9,7 +9,7 @@
 
 import { db } from "@/lib/db";
 import { getDaySlots } from "@/lib/availability";
-import type { BookingConflict, SettingsLike } from "@/lib/availability";
+import type { SettingsLike } from "@/lib/availability";
 import {
   parseDayISO,
   wallToUtc,
@@ -155,7 +155,10 @@ export async function createBooking(input: CreateBookingInput): Promise<{
           professionalId,
           status: { in: ["PENDING", "CONFIRMED"] },
           startAt: { lt: new Date(candEnd) },
-          endAt: { gt: new Date(candStart - 0) },
+          // margem à esquerda: apanhar também o gapAfter de marcações cujo fim
+          // cru já passou mas cujo intervalo invade o candidato (getDaySlots é
+          // a fonte de verdade; isto é só defesa redundante mais honesta)
+          endAt: { gt: new Date(candStart - 6 * 60 * 60_000) },
         },
         select: { id: true, startAt: true, endAt: true, service: { select: { gapAfterMinutes: true } } },
       });
@@ -382,15 +385,7 @@ export async function rescheduleBookingAsCustomer(input: {
           `Por política do estúdio, só é possível remarcar online até ${settings.minCancelHours} h antes. Contacte-nos, por favor.`,
         );
       }
-      const slots = await getDaySlots(tx, appt.professionalId, service, day, settings as SettingsLike, {
-        extraConflicts: [
-          {
-            startAt: appt.startAt,
-            endAt: appt.endAt,
-            gapAfterMinutes: service.gapAfterMinutes,
-          } satisfies BookingConflict,
-        ],
-      });
+      const slots = await getDaySlots(tx, appt.professionalId, service, day, settings as SettingsLike);
       if (!slots.some((s) => s.minutes === input.minutes)) {
         throw new BookingError("SLOT_UNAVAILABLE", "O novo horário não está disponível. Escolha outro, por favor.");
       }
@@ -490,6 +485,9 @@ export async function rescheduleAppointmentAsAdmin(
   if (current.status === "CANCELLED" || current.status === "NO_SHOW") {
     return { ok: false, reason: "Não é possível remarcar uma marcação cancelada." };
   }
+  if (current.status !== "PENDING" && current.status !== "CONFIRMED") {
+    return { ok: false, reason: "Não é possível remarcar uma marcação concluída." };
+  }
   const settings = await getSettings();
   const day = parseDayISO(dateISO);
   if (!day) return { ok: false, reason: "Data inválida." };
@@ -500,38 +498,43 @@ export async function rescheduleAppointmentAsAdmin(
   const endTime = new Date(startTime.getTime() + service.durationMin * 60_000);
   const oldStart = current.startAt;
 
-  const updated = await db.$transaction(async (tx) => {
-    await lockForProfessional(tx, current.professionalId);
-    const slots = await getDaySlots(tx, current.professionalId, service, day, settings as SettingsLike, {
-      ignoreLeadTime: true,
-      extraConflicts: [
-        {
-          startAt: current.startAt,
-          endAt: current.endAt,
-          gapAfterMinutes: service.gapAfterMinutes,
-        } satisfies BookingConflict,
-      ],
+  try {
+    const updated = await db.$transaction(async (tx) => {
+      await lockForProfessional(tx, current.professionalId);
+      // reler DENTRO da transação: outra admin pode ter cancelado/remarcado
+      // entre o check inicial e o lock (auditoria ronda 3)
+      const fresh = await tx.appointment.findUnique({ where: { id }, select: { status: true } });
+      if (!fresh || (fresh.status !== "PENDING" && fresh.status !== "CONFIRMED")) {
+        throw new BookingError("INVALID_STATUS", "Esta marcação já não pode ser remarcada.");
+      }
+      const slots = await getDaySlots(tx, current.professionalId, service, day, settings as SettingsLike, {
+        ignoreLeadTime: true,
+      });
+      if (!slots.some((s) => s.minutes === minutes)) {
+        throw new BookingError("SLOT_UNAVAILABLE", "O novo horário não está disponível.");
+      }
+      await tx.appointment.update({
+        where: { id },
+        data: { startAt: startTime, endAt: endTime },
+      });
+      await tx.appointmentEvent.create({
+        data: {
+          appointmentId: id,
+          type: "RESCHEDULED",
+          actor: "ADMIN",
+          description: reason?.trim() || `Remarcada para ${dayISO(day)} às ${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`,
+        },
+      });
+      return tx.appointment.findUniqueOrThrow({ where: { id }, include: apptFullInclude });
     });
-    if (!slots.some((s) => s.minutes === minutes)) {
-      throw new BookingError("SLOT_UNAVAILABLE", "O novo horário não está disponível.");
-    }
-    await tx.appointment.update({
-      where: { id },
-      data: { startAt: startTime, endAt: endTime },
-    });
-    await tx.appointmentEvent.create({
-      data: {
-        appointmentId: id,
-        type: "RESCHEDULED",
-        actor: "ADMIN",
-        description: reason?.trim() || `Remarcada para ${dayISO(day)} às ${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`,
-      },
-    });
-    return tx.appointment.findUniqueOrThrow({ where: { id }, include: apptFullInclude });
-  });
 
-  await mailBookingRescheduled(updated as ApptFull, oldStart);
-  return { ok: true, appointment: updated as ApptFull };
+    await mailBookingRescheduled(updated as ApptFull, oldStart);
+    return { ok: true, appointment: updated as ApptFull };
+  } catch (err) {
+    if (err instanceof BookingError) return { ok: false, reason: err.message };
+    console.error("[carmix] remarcação admin:", err);
+    return { ok: false, reason: "Houve um problema ao remarcar. Tente novamente." };
+  }
 }
 
 export async function confirmAppointmentAsAdmin(

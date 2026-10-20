@@ -269,8 +269,12 @@ export default function BookingFlow({
       // que nunca casava ("disponível" ≠ "indisponi"/"reservado")
       if (res.code === "SLOT_UNAVAILABLE") {
         // horário foi reservado por outra pessoa → voltar a escolher hora
+        // e RECARREGAR os chips: sem isto o chip tomado continuava visível e
+        // o cliente caía num loop de "escolhe outra" sem ver a realidade
         setStep(2);
         setSlot(null);
+        setSlots([]);
+        retrySlots();
       }
       return;
     }
@@ -286,7 +290,14 @@ export default function BookingFlow({
   // (antes aparecia mesmo já terminado no máximo do calendário)
   const lastShown = months[months.length - 1];
   const atMaxMonth = !!maxDay && !!lastShown && lastShown.year === Number(maxDay.slice(0, 4)) && lastShown.month === Number(maxDay.slice(5, 7));
-  const canShowMoreMonths = !!maxDay && !atMaxMonth && months.length < 3;
+  // tecto de meses DERIVADO do horizonte da BD (maxDay) — o tecto fixo de 3
+  // escondia meses inteiros dentro da janela de marcação (ex.: maxLeadDays=120)
+  const monthsHorizon = maxDay
+    ? Number(maxDay.slice(0, 4)) * 12 + Number(maxDay.slice(5, 7)) -
+      (Number(todayISO.slice(0, 4)) * 12 + Number(todayISO.slice(5, 7)) + 1) +
+      1
+    : 1;
+  const canShowMoreMonths = !!maxDay && !atMaxMonth && months.length < monthsHorizon;
 
   // ── Ecrã final ────────────────────────────────────────────────────────────
   if (done) {
