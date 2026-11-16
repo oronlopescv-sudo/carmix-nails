@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -9,9 +10,10 @@ import { cx } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Início" },
   { href: "/servicos", label: "Serviços" },
-  { href: "/sobre", label: "Sobre" },
+  { href: "/sobre", label: "Sobre Nós" },
   { href: "/galeria", label: "Galeria" },
-  { href: "/contactos", label: "Contactos" },
+  { href: "/#testemunhos", label: "Depoimentos" },
+  { href: "/contactos", label: "Contacto" },
 ];
 
 export default function Header({
@@ -33,19 +35,17 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-nude/80 bg-creme/95 backdrop-blur supports-[backdrop-filter]:bg-creme/85">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
         <Link href="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-bordo text-creme shadow-sm ring-2 ring-dourado/40">
-            <span className="font-display text-sm font-semibold tracking-wide">CN</span>
-          </span>
-          <span className="leading-tight">
-            <span className="block font-display text-[17px] font-semibold tracking-wide text-tinta">
-              {brandName}
-            </span>
-            <span className="block text-[11px] uppercase tracking-[0.2em] text-malva">
-              Estética &amp; Unhas
-            </span>
-          </span>
+          <Image
+            src="/images/logo-carmix.jpg"
+            alt={brandName}
+            width={96}
+            height={96}
+            className="h-24 w-24 object-contain"
+            priority
+          />
+          <span className="sr-only">{brandName}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação principal">
@@ -71,7 +71,7 @@ export default function Header({
               href="/agendar"
               className="rounded-full bg-bordo px-5 py-2.5 text-[14.5px] font-medium text-creme shadow-sm transition hover:bg-bordo-dark"
             >
-              Marcar Agendamento
+              Marcar Horário
             </Link>
           )}
           {whatsApp && (
@@ -136,7 +136,7 @@ export default function Header({
               onClick={() => setOpen(false)}
               className="mt-2 rounded-xl bg-bordo px-4 py-3 text-center text-[15px] font-medium text-creme"
             >
-              Marcar Agendamento
+              Marcar Horário
             </Link>
           )}
           {phone && (

@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bordo: #850b36;
-  --color-bordo-dark: #6d0930;
-  --color-malva: #a94c80;
-  --color-malva-soft: #d9a9c6;
-  --color-dourado: #c99a42;
-  --color-dourado-light: #e7cf9f;
-  --color-nude: #f2e5e8;
-  --color-creme: #fffcf8;
-  --color-casca: #f8f0f3;
-  --color-tinta: #30232a;
-  --color-tinta-soft: #6b5560;
+  --color-bordo: #7a2c7e;
+  --color-bordo-dark: #5f1f63;
+  --color-malva: #b0489b;
+  --color-malva-soft: #ddb3da;
+  --color-dourado: #c4983f;
+  --color-dourado-light: #eed9a4;
+  --color-nude: #f1e4f4;
+  --color-creme: #fffdfe;
+  --color-casca: #faf4fb;
+  --color-tinta: #2f2433;
+  --color-tinta-soft: #6e5f75;
 
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-pinyon), "Brush Script MT", cursive;
 
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-float-slow: float-slow 9s ease-in-out infinite;
@@ -73,7 +74,7 @@ body {
 .field {
   width: 100%;
   border-radius: 0.7rem;
-  border: 1px solid #e5d5dc;
+  border: 1px solid #e6d6ea;
   background: #fff;
   padding: 0.65rem 0.9rem;
   font-size: 0.95rem;
@@ -81,11 +82,11 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .field::placeholder {
-  color: #b49aa6;
+  color: #b9a3c2;
 }
 .field:focus {
   border-color: var(--color-malva);
-  box-shadow: 0 0 0 3px rgb(169 76 128 / 0.15);
+  box-shadow: 0 0 0 3px rgb(176 72 155 / 0.15);
   outline: none;
 }
 .field-error {

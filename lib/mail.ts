@@ -97,13 +97,13 @@ export function siteUrl(): string {
 // ── Modelo do e-mail ────────────────────────────────────────────────────────
 
 const COLORS = {
-  bordo: "#850B36",
-  malva: "#A94C80",
-  dourado: "#C99A42",
-  nude: "#F2E5E8",
-  branco: "#FFFCF8",
-  texto: "#30232A",
-  fundo: "#F8F0F3",
+  bordo: "#7a2c7e",
+  malva: "#b0489b",
+  dourado: "#c4983f",
+  nude: "#f1e4f4",
+  branco: "#fffdfe",
+  texto: "#2f2433",
+  fundo: "#faf4fb",
 };
 
 function emailShell(title: string, bodyHtml: string, footerNote?: string): string {
@@ -128,11 +128,11 @@ function emailShell(title: string, bodyHtml: string, footerNote?: string): strin
         </tr>
         <tr>
           <td style="padding:22px 32px 30px;">
-            ${footerNote ? `<p style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#6b5560;margin:0 0 6px;">${footerNote}</p>` : ""}
+            ${footerNote ? `<p style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#6e5f75;margin:0 0 6px;">${footerNote}</p>` : ""}
           </td>
         </tr>
         <tr>
-          <td style="background:${COLORS.nude};padding:16px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b5560;text-align:center;">
+          <td style="background:${COLORS.nude};padding:16px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6e5f75;text-align:center;">
             Este e-mail foi enviado pelo sistema de marcações online da Carmix Nails.
           </td>
         </tr>

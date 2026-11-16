@@ -43,7 +43,7 @@ export default function Footer({
     <footer className="mt-24 border-t border-nude/70 bg-casca">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
         <div>
-          <p className="font-display text-2xl text-bordo">{brandName}</p>
+          <p className="font-script text-4xl text-bordo">{brandName}</p>
           {ownerName && <p className="mt-1 text-sm text-tinta-soft">Por {ownerName}</p>}
           <p className="prose-carmix mt-4 text-sm text-tinta-soft">
             Agendamento online com confirmação transparente. Os seus dados são
@@ -144,12 +144,18 @@ export default function Footer({
         </div>
       </div>
 
-      <div className="border-t border-nude/70 py-5 text-center text-xs text-tinta-soft">
-        © {new Date().getFullYear()} {brandName}. Todos os direitos reservados.
-        {" · "}
-        <Link href="/admin" className="underline-offset-2 hover:text-malva hover:underline">
-          Área reservada
-        </Link>
+      <div className="bg-bordo px-4 py-6 text-creme sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="font-script text-4xl">{brandName}</p>
+          <p className="text-center text-[15px] tracking-wide text-creme/90">Beleza • Cuidado • Confiança</p>
+          <p className="text-center text-xs text-creme/80">
+            © {new Date().getFullYear()} {brandName}. Todos os direitos reservados.
+            {" · "}
+            <Link href="/admin" className="underline-offset-2 hover:text-creme hover:underline">
+              Área reservada
+            </Link>
+          </p>
+        </div>
       </div>
     </footer>
   );
