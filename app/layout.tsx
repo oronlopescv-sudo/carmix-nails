@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
 import { siteUrl } from "@/lib/mail";
-import { playfair, jost } from "@/components/layout/fonts";
+import { greatVibes, playfair, jost } from "@/components/layout/fonts";
 
 const FALLBACK_BRAND = "Carmix Nails";
 
@@ -34,14 +34,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#850b36",
+  themeColor: "#7d2877",
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt" className={`${playfair.variable} ${jost.variable}`}>
+    <html lang="pt" className={`${greatVibes.variable} ${playfair.variable} ${jost.variable}`}>
       <body>{children}</body>
     </html>
   );

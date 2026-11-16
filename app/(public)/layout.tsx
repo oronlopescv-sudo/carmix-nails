@@ -6,13 +6,11 @@
 export const dynamic = "force-dynamic";
 
 import { getSettings } from "@/lib/settings";
-import { getScheduleSummary } from "@/lib/queries";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
-  const schedule = await getScheduleSummary();
   return (
     <div className="flex min-h-dvh flex-col">
       <Header
@@ -22,17 +20,7 @@ export default async function PublicLayout({ children }: { children: React.React
         bookingDisabled={!s.bookingEnabled}
       />
       <main className="flex-1">{children}</main>
-      <Footer
-        brandName={s.brandName}
-        ownerName={s.ownerName}
-        phone={s.phone}
-        email={s.email}
-        address={s.address}
-        city={s.city}
-        instagram={s.instagram}
-        facebook={s.facebook}
-        schedule={schedule}
-      />
+      <Footer brandName={s.brandName} />
     </div>
   );
 }

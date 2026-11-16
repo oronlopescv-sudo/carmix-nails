@@ -6,7 +6,7 @@ import { cx } from "@/lib/utils";
 export function WaveDivider({
   className,
   flip = false,
-  from = "#F8F0F3",
+  from = "#FBE8F5",
 }: {
   className?: string;
   flip?: boolean;
@@ -24,7 +24,7 @@ export function WaveDivider({
       <path d="M0,60 C240,100 480,20 720,50 C960,80 1200,30 1440,55 L1440,100 L0,100 Z" fill={from} />
       <path
         d="M0,68 C260,104 520,30 760,58 C1000,86 1240,40 1440,62 L1440,100 L0,100 Z"
-        fill="#A94C80"
+        fill="#9A177C"
         opacity="0.30"
       />
       <path
@@ -45,9 +45,9 @@ export function WaveBand({ className }: { className?: string }) {
       aria-hidden="true"
       className={cx("block h-[64px] w-full", className)}
     >
-      <path d="M0,50 C220,95 460,15 720,45 C980,75 1220,25 1440,50 L1440,120 L0,120 Z" fill="#A94C80" opacity="0.45" />
+      <path d="M0,50 C220,95 460,15 720,45 C980,75 1220,25 1440,50 L1440,120 L0,120 Z" fill="#9A177C" opacity="0.45" />
       <path d="M0,70 C260,108 520,40 780,62 C1040,84 1280,48 1440,66 L1440,120 L0,120 Z" fill="#C99A42" opacity="0.40" />
-      <path d="M0,88 C280,120 560,58 840,76 C1100,92 1300,62 1440,80 L1440,120 L0,120 Z" fill="#850B36" />
+      <path d="M0,88 C280,120 560,58 840,76 C1100,92 1300,62 1440,80 L1440,120 L0,120 Z" fill="#7D2877" />
     </svg>
   );
 }
@@ -62,8 +62,8 @@ export function HeroWave({ className }: { className?: string }) {
       className={cx("block w-full", className)}
     >
       <path d="M0,120 C300,180 600,90 900,130 C1150,163 1300,110 1440,140 L1440,180 L0,180 Z" fill="#C99A42" opacity="0.5" />
-      <path d="M0,140 C320,190 640,110 940,145 C1180,172 1320,125 1440,150 L1440,180 L0,180 Z" fill="#A94C80" opacity="0.55" />
-      <path d="M0,160 C340,195 680,130 1000,158 C1240,179 1350,140 1440,160 L1440,180 L0,180 Z" fill="#850B36" opacity="0.9" />
+      <path d="M0,140 C320,190 640,110 940,145 C1180,172 1320,125 1440,150 L1440,180 L0,180 Z" fill="#9A177C" opacity="0.55" />
+      <path d="M0,160 C340,195 680,130 1000,158 C1240,179 1350,140 1440,160 L1440,180 L0,180 Z" fill="#7D2877" opacity="0.9" />
     </svg>
   );
 }

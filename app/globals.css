@@ -1,20 +1,25 @@
 @import "tailwindcss";
 
+/* Paleta do desenho do dono (design/site/home-desenho.png):
+   ameixa profunda #7d2877 (banda do rodapé, botões), magenta #9a177c
+   (pílula ativa), rosa claríssimo no herói, lila no cartão de contactos,
+   dourado só nas joias do logótipo. */
 @theme {
-  --color-bordo: #850b36;
-  --color-bordo-dark: #6d0930;
-  --color-malva: #a94c80;
-  --color-malva-soft: #d9a9c6;
+  --color-bordo: #7d2877;
+  --color-bordo-dark: #6a2264;
+  --color-malva: #9a177c;
+  --color-malva-soft: #e8cae0;
   --color-dourado: #c99a42;
   --color-dourado-light: #e7cf9f;
-  --color-nude: #f2e5e8;
+  --color-nude: #fdf1f6;
   --color-creme: #fffcf8;
-  --color-casca: #f8f0f3;
-  --color-tinta: #30232a;
-  --color-tinta-soft: #6b5560;
+  --color-casca: #fbe8f5;
+  --color-tinta: #3a2236;
+  --color-tinta-soft: #7c5b74;
 
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-greatvibes), "Segoe Script", cursive;
 
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-float-slow: float-slow 9s ease-in-out infinite;

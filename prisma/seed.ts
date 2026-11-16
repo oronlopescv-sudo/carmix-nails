@@ -178,12 +178,13 @@ async function main() {
   // sem imagens. Assim que o dono carrega fotos reais no painel, estas nunca
   // mais são escritas (galeria: só se a tabela estiver vazia; campos de imagem:
   // só se ainda estiverem a null) — nem dados reais da dona são descartados.
+  // Fotografias do DESENHO do dono (recortes de design/site/home-desenho.png).
+  // "As fotografias têm de ser iguais aos desenhos" — encomenda do dono, 16-11.
   const GALLERY_STOCK = [
-    { imageUrl: "/images/seed/galeria-polido.jpg", title: "Manicure em tons naturais", alt: "Mãos com unhas polidas em tons naturais", sortOrder: 0 },
-    { imageUrl: "/images/seed/servico-fibras.jpg", title: "Almond com pontas prateadas", alt: "Unhas almond com pontas prateadas", sortOrder: 1 },
-    { imageUrl: "/images/seed/servico-gel.jpg", title: "Manicure em gel", alt: "Manicure em gel com acabamento brilhante", sortOrder: 2 },
-    { imageUrl: "/images/seed/galeria-preta.jpg", title: "Manicure preta", alt: "Mãos com manicure preta", sortOrder: 3 },
-    { imageUrl: "/images/seed/galeria-art.jpg", title: "Nail art", alt: "Nail art detalhada", sortOrder: 4 },
+    { imageUrl: "/images/galeria/desenho-1.jpg", title: "Manicure francesa natural", alt: "Mãos com unhas francesas naturais", sortOrder: 0 },
+    { imageUrl: "/images/galeria/desenho-2.jpg", title: "Nail art de malva", alt: "Unhas com detalhe em malva e lantejoulas", sortOrder: 1 },
+    { imageUrl: "/images/galeria/desenho-3.jpg", title: "Vermelho clássico", alt: "Unhas vermelhas longas", sortOrder: 2 },
+    { imageUrl: "/images/galeria/desenho-4.jpg", title: "Rosa macio com folheadas", alt: "Unhas rosa macio com folheadas prateadas", sortOrder: 3 },
   ];
   if ((await db.galleryImage.count()) === 0) {
     await db.galleryImage.createMany({ data: GALLERY_STOCK });
@@ -207,7 +208,7 @@ async function main() {
   if (settingsRow && settingsRow.heroImageUrl === null) {
     await db.businessSettings.update({
       where: { id: 1 },
-      data: { heroImageUrl: "/images/seed/hero-nails.jpg" },
+      data: { heroImageUrl: "/images/hero-desenho.jpg" },
     });
   }
 
