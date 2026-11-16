@@ -33,6 +33,21 @@ const SERVICOS_DESENHO = [
 const MARCA_SCRIPT = "Carmix";
 const MARCA_SERIF = "Nails Designer";
 
+// Contacto público real do estúdio (Instagram carmix.94). Serve de ponte quando
+// a base de dados não responde — quando a BD responde, os valores dela vencem.
+const CONTACTO_MORADA = "Espargos/Pretória, perto do prédio Engeobra, Santa Maria";
+const CONTACTO_CIDADE = "Ilha do Sal, Cabo Verde";
+const CONTACTO_EMAIL = "carmix.nails@gmail.com";
+const INSTAGRAM_LINK = "carmix.94";
+// As quatro fotografias de exemplo do desenho (public/images/galeria) — mostradas
+// só enquanto a galeria da base de dados está indisponível ou vazia.
+const FOTOS_EXEMPLO_GALERIA = [
+  { imageUrl: "/images/galeria/desenho-1.jpg", alt: "Manicure francesa natural" },
+  { imageUrl: "/images/galeria/desenho-2.jpg", alt: "Unhas com detalhe em malva" },
+  { imageUrl: "/images/galeria/desenho-3.jpg", alt: "Unhas vermelhas longas" },
+  { imageUrl: "/images/galeria/desenho-4.jpg", alt: "Rosa macio com folheadas prateadas" },
+];
+
 function Stars({ n }: { n: number }) {
   return (
     <span className="inline-flex gap-0.5 text-dourado" aria-label={`${n} de 5 estrelas`}>
@@ -47,6 +62,7 @@ function Stars({ n }: { n: number }) {
 export default async function Home() {
   const s = await getSettings();
   const [gallery, reviews] = await Promise.all([getVisibleGallery(8), getPublishedReviews(6)]);
+  const instagramDisplay = s.instagram || INSTAGRAM_LINK;
 
   return (
     <>
@@ -182,16 +198,14 @@ export default async function Home() {
           {/* em telemóvel a foto mantém-se em cartão arredondado (md+ sangra pelo absoluto) */}
           <div className="relative md:hidden">
             <div className="relative aspect-[4/3] overflow-hidden rounded-[2.5rem] bg-casca shadow-lg ring-1 ring-malva-soft/60">
-              {s.heroImageUrl && (
-                <Image
-                  src={s.heroImageUrl}
-                  alt={`Imagem principal da ${s.brandName}`}
-                  fill
-                  priority
-                  sizes="100vw"
-                  className="object-cover"
-                />
-              )}
+              <Image
+                src={s.heroImageUrl || "/images/hero-desenho.jpg"}
+                alt={`Imagem principal da ${s.brandName}`}
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+              />
             </div>
           </div>
         </div>
@@ -273,21 +287,27 @@ export default async function Home() {
                 </h2>
                 <span aria-hidden className="h-px flex-1 bg-malva-soft" />
               </div>
-              {gallery.length > 0 && (
-                <div className="mt-5 grid grid-cols-4 gap-2 sm:gap-3">
-                  {gallery.slice(0, 4).map((img, i) => (
-                    <div key={img.id} className="group relative aspect-square overflow-hidden rounded-xl bg-casca ring-1 ring-malva-soft/60 transition hover:ring-dourado/60">
-                      <Image
-                        src={img.imageUrl}
-                        alt={img.alt || img.title || "Trabalho da Carmix Nails"}
-                        fill
-                        sizes="(max-width: 640px) 25vw, 15vw"
-                        className="object-cover transition duration-500 group-hover:scale-[1.04]"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(()=>{
+                const fotos: { imageUrl: string; alt: string | null; title?: string | null }[] =
+                  gallery.length > 0
+                    ? gallery.slice(0, 4)
+                    : FOTOS_EXEMPLO_GALERIA;
+                return (
+                  <div className="mt-5 grid grid-cols-4 gap-2 sm:gap-3">
+                    {fotos.map((img) => (
+                      <div key={img.imageUrl} className="group relative aspect-square overflow-hidden rounded-xl bg-casca ring-1 ring-malva-soft/60 transition hover:ring-dourado/60">
+                        <Image
+                          src={img.imageUrl}
+                          alt={img.alt || img.title || "Trabalho da Carmix Nails"}
+                          fill
+                          sizes="(max-width: 640px) 25vw, 15vw"
+                          className="object-cover transition duration-500 group-hover:scale-[1.04]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             <div className="mt-5 flex justify-center">
                 <Link
                   href="/galeria"
@@ -322,30 +342,22 @@ export default async function Home() {
                     </a>
                   </li>
                 ) : null}
-                {(s.address || s.city) && (
-                  <li className="inline-flex items-start gap-2.5">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-bordo/90 text-creme"><MapPin className="h-3.5 w-3.5" /></span>
-                    <span>
-                      {s.address}
-                      {s.city ? (
-                        <>
-                          <br />
-                          <span className="text-tinta-soft">{s.city}</span>
-                        </>
-                      ) : null}
-                    </span>
-                  </li>
-                )}
-                {s.email ? (
-                  <li>
-                    <a href={`mailto:${s.email}`} className="inline-flex items-center gap-2.5 hover:text-bordo">
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-bordo/90 text-creme"><Mail className="h-3.5 w-3.5" /></span>
-                      {s.email}
-                    </a>
-                  </li>
-                ) : null}
+                <li className="inline-flex items-start gap-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-bordo/90 text-creme"><MapPin className="h-3.5 w-3.5" /></span>
+                  <span>
+                    {s.address || CONTACTO_MORADA}
+                    <br />
+                    <span className="text-tinta-soft">{s.city || CONTACTO_CIDADE}</span>
+                  </span>
+                </li>
+                <li>
+                  <a href={`mailto:${(s.email || CONTACTO_EMAIL).replace(/\s/g, "")}`} className="inline-flex items-center gap-2.5 hover:text-bordo">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-bordo/90 text-creme"><Mail className="h-3.5 w-3.5" /></span>
+                    {s.email || CONTACTO_EMAIL}
+                  </a>
+                </li>
               </ul>
-              {(s.instagram || s.facebook || s.tiktok) && (
+              {instagramDisplay && (
                 <>
                   <div className="mt-5 flex items-center justify-end gap-3">
                     <span aria-hidden className="h-px w-8 bg-malva/40" />
@@ -363,9 +375,9 @@ export default async function Home() {
                         <Facebook className="h-4 w-4" />
                       </a>
                     )}
-                    {s.instagram && (
+                    {s.instagram || INSTAGRAM_LINK ? (
                       <a
-                        href={s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram}`}
+                        href={instagramDisplay.startsWith("http") ? instagramDisplay : `https://instagram.com/${instagramDisplay}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Instagram"
@@ -373,7 +385,7 @@ export default async function Home() {
                       >
                         <Instagram className="h-4 w-4" />
                       </a>
-                    )}
+                    ) : null}
                     {s.tiktok && (
                       <a
                         href={s.tiktok.startsWith("http") ? s.tiktok : `https://tiktok.com/@${s.tiktok}`}
