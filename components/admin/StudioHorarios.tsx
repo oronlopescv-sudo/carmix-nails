@@ -90,7 +90,7 @@ export default function StudioHorarios({
             </div>
             <div className="mt-3">
               <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-                <input type="checkbox" checked={form.allDay} onChange={(e) => setForm({ ...form, allDay: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+                <input type="checkbox" checked={form.allDay} onChange={(e) => setForm({ ...form, allDay: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
                 Dia completo (desmarque para fechar só uma parte do dia)
               </label>
               {!form.allDay && (

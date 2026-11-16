@@ -8,6 +8,7 @@ import { STATUS_LABELS, STATUS_COLORS, WEEKDAY_SHORT_MON } from "@/lib/constants
 import { formatPrice } from "@/lib/pricing";
 import { AppointmentActions } from "@/components/admin/AppointmentActions";
 import NewBookingDialog from "@/components/admin/NewBookingDialog";
+import { AgendaGrid } from "@/components/admin/AgendaGrid";
 import { cx } from "@/lib/utils";
 import type { AppointmentRowData } from "@/types/admin";
 
@@ -177,6 +178,25 @@ export default async function AgendamentosPage({ searchParams }: Params) {
       <div className="mt-6">
         {q && filtered.length === 0 && (
           <p className="rounded-xl bg-creme p-4 text-[14px] text-tinta-soft ring-1 ring-nude">Sem resultados para “{q}” neste intervalo.</p>
+        )}
+
+        {view !== "month" && (
+          <div className="mb-6">
+            <AgendaGrid
+              days={view === "week" ? Array.from({ length: 7 }, (_, i) => addDaysParts(rangeStartDay, i)) : [anchor]}
+              appts={filtered.map((a) => ({
+                id: a.id,
+                startAt: a.startAt,
+                endAt: a.endAt,
+                status: a.status,
+                serviceName: a.service.name,
+                customerName: a.customer.name,
+                professionalName: a.professional.name,
+              }))}
+              timezone={s.timezone}
+              todayISO={dayISO(today)}
+            />
+          </div>
         )}
 
         {view !== "month" && (

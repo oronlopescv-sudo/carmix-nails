@@ -66,7 +66,7 @@ export default function ReviewsManager({ reviews }: { reviews: Array<ReviewRow> 
             <textarea id="rv-text" rows={3} className="field resize-y" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder="Escreva o testemunho tal como a cliente o enviou…" />
           </div>
           <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-            <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+            <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
             Publicar de imediato
           </label>
         </div>

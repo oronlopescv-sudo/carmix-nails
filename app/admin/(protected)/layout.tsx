@@ -2,6 +2,7 @@
 // As páginas em app/admin/(protected)/ partilham este layout.
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -57,40 +58,38 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
       <div className="mx-auto flex max-w-7xl">
         {/* lateral (desktop) */}
-        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-nude bg-creme p-5 lg:flex">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-bordo text-creme shadow-sm ring-2 ring-dourado/40">
-              <span className="font-display text-sm font-semibold">CN</span>
-            </span>
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col bg-bordo text-creme lg:flex">
+          <Link href="/admin" className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+            <Image src="/images/logo-carmix.jpg" alt={s.brandName} width={56} height={56} className="h-14 w-14 rounded-full bg-white object-contain" />
             <span>
-              <span className="block font-display text-[15.5px] font-semibold text-bordo">{s.brandName}</span>
-              <span className="block text-[11px] uppercase tracking-[0.18em] text-malva">Painel</span>
+              <span className="block font-script text-2xl leading-none">{s.brandName}</span>
+              <span className="block text-[10.5px] uppercase tracking-[0.2em] text-creme/70">Painel</span>
             </span>
           </Link>
 
-          <nav className="mt-8 flex flex-col gap-0.5" aria-label="Navegação do painel">
+          <nav className="mt-6 flex flex-col gap-1 px-3" aria-label="Navegação do painel">
             {NAV.map(({ href, icon: Icon, label }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14.5px] text-tinta-soft transition hover:bg-nude hover:text-bordo"
+                className="flex items-center gap-3 rounded-full px-4 py-2.5 text-[14.5px] text-creme/85 transition hover:bg-white/10 hover:text-creme"
               >
                 <Icon className="h-4.5 w-4.5" /> {label}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-auto space-y-3 text-[13px]">
-            <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-tinta-soft hover:text-malva">
+          <div className="mt-auto space-y-3 border-t border-white/10 p-5 text-[13px]">
+            <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-creme/75 hover:text-creme">
               <ExternalLink className="h-4 w-4" /> Ver site público
             </a>
-            <p className="text-tinta-soft">
-              Olá, <span className="font-medium text-tinta">{user.name}</span>
+            <p className="text-creme/75">
+              Olá, <span className="font-medium text-creme">{user.name}</span>
             </p>
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl border border-nude px-3.5 py-2 text-tinta-soft transition hover:border-rose-300 hover:text-rose-600"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-creme/85 transition hover:bg-white/10 hover:text-creme"
               >
                 <LogOut className="h-4 w-4" /> Sair
               </button>

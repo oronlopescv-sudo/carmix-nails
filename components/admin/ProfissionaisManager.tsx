@@ -138,7 +138,7 @@ export default function ProfissionaisManager({
                       <input
                         type="checkbox"
                         checked={checked}
-                        className="h-4 w-4 accent-[#850B36]"
+                        className="h-4 w-4 accent-[#7a2c7e]"
                         onChange={(e) =>
                           setInfoForm({ ...infoForm, serviceIds: e.target.checked ? [...infoForm.serviceIds, s.id] : infoForm.serviceIds.filter((x) => x !== s.id) })
                         }
@@ -150,7 +150,7 @@ export default function ProfissionaisManager({
               </div>
             </div>
             <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-              <input type="checkbox" checked={infoForm.isActive} onChange={(e) => setInfoForm({ ...infoForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+              <input type="checkbox" checked={infoForm.isActive} onChange={(e) => setInfoForm({ ...infoForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
               Ativo (aceita marcações)
             </label>
           </div>
@@ -332,7 +332,7 @@ export default function ProfissionaisManager({
                 </div>
                 <div className="mt-3">
                   <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-                    <input type="checkbox" checked={blockForm.allDay} onChange={(e) => setBlockForm({ ...blockForm, allDay: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+                    <input type="checkbox" checked={blockForm.allDay} onChange={(e) => setBlockForm({ ...blockForm, allDay: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
                     Dia completo (desmarque para bloquear só uma parte do dia)
                   </label>
                   {!blockForm.allDay && (

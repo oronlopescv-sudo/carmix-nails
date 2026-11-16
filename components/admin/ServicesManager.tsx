@@ -191,7 +191,7 @@ export default function ServicesManager({
               <textarea id="cat-desc" rows={2} className="field resize-y" value={catForm.description} onChange={(e) => setCatForm({ ...catForm, description: e.target.value })} />
             </div>
             <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-              <input type="checkbox" checked={catForm.isActive} onChange={(e) => setCatForm({ ...catForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+              <input type="checkbox" checked={catForm.isActive} onChange={(e) => setCatForm({ ...catForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
               Categoria visível no site
             </label>
           </div>
@@ -364,11 +364,11 @@ export default function ServicesManager({
                 <UploadField label="Fotografia do serviço" value={svcForm.imageUrl} onChange={(url) => setSvcForm({ ...svcForm, imageUrl: url })} hint="JPG/PNG/WebP até 8 MB. Opcional — sem foto usa um padrão elegante." />
               </div>
               <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-                <input type="checkbox" checked={svcForm.isActive} onChange={(e) => setSvcForm({ ...svcForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+                <input type="checkbox" checked={svcForm.isActive} onChange={(e) => setSvcForm({ ...svcForm, isActive: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
                 Ativo (reservável e visível)
               </label>
               <label className="flex items-center gap-2 text-[13.5px] text-tinta">
-                <input type="checkbox" checked={svcForm.isFeatured} onChange={(e) => setSvcForm({ ...svcForm, isFeatured: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+                <input type="checkbox" checked={svcForm.isFeatured} onChange={(e) => setSvcForm({ ...svcForm, isFeatured: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
                 Destaque na página inicial
               </label>
             </div>

@@ -233,7 +233,7 @@ function Field({
 function Check({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-start gap-2.5 rounded-xl bg-casca px-4 py-3 ring-1 ring-nude">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#850B36]" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#7a2c7e]" />
       <span>
         <span className="block text-[13.5px] font-medium text-tinta">{label}</span>
         <span className="block text-[12px] text-tinta-soft">{hint}</span>

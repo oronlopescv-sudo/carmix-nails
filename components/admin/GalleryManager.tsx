@@ -80,7 +80,7 @@ export default function GalleryManager({ images }: { images: Array<GalleryRow> }
                   <input className="field" value={form.title} placeholder="Título (opcional)" onChange={(e) => setForm({ ...form, title: e.target.value })} />
                   <input className="field" value={form.alt} placeholder="Texto alternativo (descrição da foto)" onChange={(e) => setForm({ ...form, alt: e.target.value })} />
                   <label className="flex items-center gap-2 text-[13px] text-tinta">
-                    <input type="checkbox" checked={form.isVisible} onChange={(e) => setForm({ ...form, isVisible: e.target.checked })} className="h-4 w-4 accent-[#850B36]" />
+                    <input type="checkbox" checked={form.isVisible} onChange={(e) => setForm({ ...form, isVisible: e.target.checked })} className="h-4 w-4 accent-[#7a2c7e]" />
                     Visível no site
                   </label>
                   <div className="mt-1 flex gap-3">
